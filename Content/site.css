@@ -1,0 +1,23 @@
+﻿svg {
+    width: 100%;
+}
+
+.axis path, .axis line {
+    shape-rendering: crispEdges;
+}
+
+.axis text {
+    fill: #777;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.tick line {
+    stroke: #777;
+    stroke-width: 1;
+}
+
+.axis .domain {
+    fill: none;
+    stroke: #777;
+    stroke-width: 1;
+}
