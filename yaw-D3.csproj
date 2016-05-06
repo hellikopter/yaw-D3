@@ -63,6 +63,9 @@
     <Content Include="Scripts\examples\column\data.js" />
     <Content Include="Scripts\examples\column\example.js" />
     <Content Include="Scripts\examples\column\index.html" />
+    <Content Include="Scripts\examples\line\data.js" />
+    <Content Include="Scripts\examples\line\example.js" />
+    <Content Include="Scripts\examples\line\index.html" />
     <Content Include="Scripts\yawd3.js" />
     <Content Include="Web.config" />
   </ItemGroup>

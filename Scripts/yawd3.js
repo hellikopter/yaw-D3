@@ -14,7 +14,8 @@
     };
 
     yawd3.chartKind = {
-        column: 1
+        column: 1,
+        line: 2
     };
 
     yawd3.defaultOptions = {
@@ -40,6 +41,13 @@
 
         columnChart: {
             isStacked: false
+        },
+
+        lineChart: {
+            isTimeCategory: false,
+            interpolation: "linear",
+            categoryTimeFormat: "%Y-%m-%d",
+            isArea: false
         }
     };
 
@@ -51,6 +59,9 @@
         switch (options.chartType) {
             case yawd3.chartKind.column:
                 createColumnChart(options, data);
+                break;
+            case yawd3.chartKind.line:
+                createLineChart(options, data);
                 break;
         }
     };
@@ -65,13 +76,18 @@
             case yawd3.chartKind.column:
                 updateColumnChart(options, data);
                 break;
+            case yawd3.chartKind.line:
+                updateLineChart(options, data);
+                break;
         }
     };
 
     function checkDataOptions(chartType, data) {
-        if ((chartType == yawd3.chartKind.column) &&
+        if (((chartType == yawd3.chartKind.column) &&
             ((!data) || (data == null) || (!data.sets) || (data.sets == null) || (Array.isArray(data.sets) == false) ||
-            (!data.categories) || (data.categories == null) || (Array.isArray(data.categories) == false)))
+            (!data.categories) || (data.categories == null) || (Array.isArray(data.categories) == false))) ||
+            ((chartType == yawd3.chartKind.line) &&
+            ((!data) || (data == null) || (!data.sets) || (data.sets == null) || (Array.isArray(data.sets) == false))))
             throw new Error("Invalid data format");
     };
 
@@ -82,6 +98,9 @@
             throw new Error("No char element id");
         if ((!options.chartType) || (options.chartType == null))
             throw new Error("No chart type");
+        if ((options.chartType != yawd3.chartKind.column) &&
+            (options.chartType != yawd3.chartKind.line))
+            throw new Error("Invalid chart type");
     };
 
     function setToDefaultOptions(options) {
@@ -103,7 +122,13 @@
             options.columnChart = options.columnChart || yawd3.defaultOptions.columnChart;
             options.columnChart.isStacked = options.columnChart.isStacked || yawd3.defaultOptions.columnChart.isStacked;
         }
-
+        if (options.chartType == yawd3.chartKind.line) {
+            options.lineChart = options.lineChart || yawd3.defaultOptions.lineChart;
+            options.lineChart.isTimeCategory = options.lineChart.isTimeCategory || yawd3.defaultOptions.lineChart.isTimeCategory;
+            options.lineChart.interpolation = options.lineChart.interpolation || yawd3.defaultOptions.lineChart.interpolation;
+            options.lineChart.categoryTimeFormat = options.lineChart.categoryTimeFormat || yawd3.defaultOptions.lineChart.categoryTimeFormat;
+            options.lineChart.isArea = options.lineChart.isArea || yawd3.defaultOptions.lineChart.isArea;
+        }
         return options;
     };
 
@@ -120,6 +145,8 @@
 
         return chart;
     };
+
+    //column
 
     function setupColumnChart(data, isStacked, height, width) {
         var x = d3.scale.ordinal()
@@ -269,7 +296,7 @@
             });
 
         columns.exit()
-            .style("fill", "#e59393")
+            .style("fill", "#E63232")
             .transition()
             .duration(options.transition.delay.remove)
             .attr("y", columnChart.y(0))
@@ -324,10 +351,190 @@
                 else
                     return columnChart.y(d.values[catIx]);
             });
-
-        return chart;
     };
-    
+
+    //line
+
+    function setupLineChart(data, isTimeCategory, categoryTimeFormat, interpolation, isArea,
+        height, width) {
+        var x = null;
+        var xMinValue = null;
+        var xMaxValue = null;
+        var yMinValue = null;
+        var yMaxValue = null;
+
+        xMinValue = d3.min(data.sets, function (set) {
+            return d3.min(set.values, function (val) {
+                return isTimeCategory == true ? d3.time.format(categoryTimeFormat).parse(val.x) : val.x;
+            });
+        });
+
+        xMaxValue = d3.max(data.sets, function (set) {
+            return d3.max(set.values, function (val) {
+                return isTimeCategory == true ? d3.time.format(categoryTimeFormat).parse(val.x) : val.x;
+            });
+        });
+
+        yMinValue = d3.min(data.sets, function (set) {
+            return d3.min(set.values, function (val) {
+                return val.y;
+            });
+        });
+
+        yMaxValue = d3.max(data.sets, function (set) {
+            return d3.max(set.values, function (val) {
+                return val.y;
+            });
+        });
+
+        if (isTimeCategory == true)
+            x = d3.time.scale()
+                .domain([xMinValue, xMaxValue])
+                .range([0, width]);
+        else
+            x = d3.scale.linear()
+                .domain([xMinValue, xMaxValue])
+                .range([0, width]);
+
+        var y = d3.scale.linear()
+            .domain([yMinValue, yMaxValue])
+            .range([height, 0]);
+
+        var xAxis = d3.svg.axis()
+            .scale(x)
+            .orient("bottom");
+
+        var yAxis = d3.svg.axis()
+            .scale(y)
+            .innerTickSize(10)
+            .ticks(10)
+            .orient("left");
+
+        var line = null;
+
+        if (isArea == true)
+            line = d3.svg.area()
+                .interpolate(interpolation)
+                .x(function (d) { return isTimeCategory == true ? x(d3.time.format(categoryTimeFormat).parse(d.x)) : x(d.x); })
+                .y0(height)
+                .y1(function (d) { return y(d.y); });
+        else
+            line = d3.svg.line()
+                .interpolate(interpolation)
+                .x(function (d) { return isTimeCategory == true ? x(d3.time.format(categoryTimeFormat).parse(d.x)) : x(d.x); })
+                .y(function (d) { return y(d.y); });
+
+        return {
+            x: x,
+            y: y,
+            xAxis: xAxis,
+            yAxis: yAxis,
+            line: line
+        }
+    };
+
+    function createLineChart(options, data) {
+        var chart = chartSetup(options);
+        var lineChart = setupLineChart(data, options.lineChart.isTimeCategory, options.lineChart.categoryTimeFormat,
+            options.lineChart.interpolation, options.lineChart.isArea, options.height, options.width);
+
+        chart.selectAll(".line")
+            .data(data.sets, function (d) {
+                return d.name;
+            })
+            .enter()
+            .append("g")
+            .attr("class", "line")
+            .append("path")
+            .style("fill", function (d, ix) {
+                if (options.lineChart.isArea == true)
+                    return d.colour || d3.scale.category20().range()[ix % 20];
+                else
+                    return "none";
+            })
+            .style("opacity", function (d, ix) {
+                if (options.lineChart.isArea == true)
+                    return 0.8;
+                else
+                    return 1;
+            })
+            .attr("d", function (d) {
+                return lineChart.line(d.values);
+            })
+            .style("stroke", function (d, ix) {
+                return d.colour || d3.scale.category20().range()[ix % 20]
+            });
+
+        chart.append("g")
+            .attr("class", "x axis")
+            .attr("transform", "translate(0," + options.height + ")")
+            .call(lineChart.xAxis);
+
+        chart.append("g")
+            .attr("class", "y axis")
+            .call(lineChart.yAxis);
+    };
+
+    function updateLineChart(options, data) {
+        var lineChart = setupLineChart(data, options.lineChart.isTimeCategory, options.lineChart.categoryTimeFormat,
+            options.lineChart.interpolation, options.lineChart.isArea, options.height, options.width);
+
+        var chart = d3.select(options.chartId + " g");
+
+        chart.select(".x.axis")
+            .transition()
+            .duration(options.transition.delay.update)
+            .ease("sin-in-out")
+            .call(lineChart.xAxis);
+
+        chart.select(".y.axis")
+            .transition()
+            .duration(options.transition.delay.update)
+            .ease("sin-in-out")
+            .call(lineChart.yAxis);
+
+        var sets = chart.selectAll("g.line")
+            .data(data.sets, function (d) {
+                return d.name;
+            });
+
+        sets.exit()
+            .selectAll("path")
+            .style("stroke-width", 3)
+            .style("stroke", "#E63232")
+            .transition()
+            .duration(options.transition.delay.remove)
+            .remove();
+
+        sets.enter()
+            .append("g")
+            .attr("class", "line")
+            .append("path")
+            .style("fill", function (d, ix) {
+                if (options.lineChart.isArea == true)
+                    return d.colour || d3.scale.category20().range()[ix % 20];
+                else
+                    return "none";
+            })
+            .style("opacity", function (d, ix) {
+                if (options.lineChart.isArea == true)
+                    return 0.8;
+                else
+                    return 1;
+            });
+
+        sets.selectAll("path")
+            .transition()
+            .duration(options.transition.delay.update)
+            .ease("linear")
+            .attr("d", function (d, catIx, setIx) {
+                return lineChart.line(data.sets[setIx].values);
+            })
+            .style("stroke", function (d, catIx, setIx) {
+                return d.colour || d3.scale.category20().range()[setIx % 20]
+            });
+    };
+
     return yawd3;
 
 }));

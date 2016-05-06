@@ -16,10 +16,10 @@
             }],
             categories:[{
                 name: categoryName1,
-                fill: fillColour
+                fill: fillColour1
             }, {
                 name: categoryName2,
-                fill: fillColour
+                fill: fillColour2
             }, {
                 ...
             }],
