@@ -15,7 +15,8 @@
 
     yawd3.chartKind = {
         column: 1,
-        line: 2
+        line: 2,
+        pie: 3
     };
 
     yawd3.defaultOptions = {
@@ -36,7 +37,8 @@
                 insert: 1500,
                 update: 500,
                 remove: 500
-            }
+            },
+            exitColour: "#E63232"
         },
 
         columnChart: {
@@ -48,6 +50,10 @@
             interpolation: "linear",
             categoryTimeFormat: "%Y-%m-%d",
             isArea: false
+        },
+
+        pieChart: {
+            isDoughnut: false
         }
     };
 
@@ -62,6 +68,9 @@
                 break;
             case yawd3.chartKind.line:
                 createLineChart(options, data);
+                break;
+            case yawd3.chartKind.pie:
+                createPieChart(options, data);
                 break;
         }
     };
@@ -79,6 +88,9 @@
             case yawd3.chartKind.line:
                 updateLineChart(options, data);
                 break;
+            case yawd3.chartKind.pie:
+                updatePieChart(options, data);
+                break;
         }
     };
 
@@ -87,6 +99,8 @@
             ((!data) || (data == null) || (!data.sets) || (data.sets == null) || (Array.isArray(data.sets) == false) ||
             (!data.categories) || (data.categories == null) || (Array.isArray(data.categories) == false))) ||
             ((chartType == yawd3.chartKind.line) &&
+            ((!data) || (data == null) || (!data.sets) || (data.sets == null) || (Array.isArray(data.sets) == false))) ||
+            ((chartType == yawd3.chartKind.pie) &&
             ((!data) || (data == null) || (!data.sets) || (data.sets == null) || (Array.isArray(data.sets) == false))))
             throw new Error("Invalid data format");
     };
@@ -99,7 +113,8 @@
         if ((!options.chartType) || (options.chartType == null))
             throw new Error("No chart type");
         if ((options.chartType != yawd3.chartKind.column) &&
-            (options.chartType != yawd3.chartKind.line))
+            (options.chartType != yawd3.chartKind.line) &&
+            (options.chartType != yawd3.chartKind.pie))
             throw new Error("Invalid chart type");
     };
 
@@ -118,6 +133,7 @@
         options.transition.delay.insert = options.transition.delay.insert || yawd3.defaultOptions.transition.delay.insert;
         options.transition.delay.remove = options.transition.delay.remove || yawd3.defaultOptions.transition.delay.remove;
         options.transition.delay.update = options.transition.delay.update || yawd3.defaultOptions.transition.delay.update;
+        options.transition.exitColour = options.transition.exitColour || yawd3.defaultOptions.transition.exitColour;
         if (options.chartType == yawd3.chartKind.column) {
             options.columnChart = options.columnChart || yawd3.defaultOptions.columnChart;
             options.columnChart.isStacked = options.columnChart.isStacked || yawd3.defaultOptions.columnChart.isStacked;
@@ -129,6 +145,10 @@
             options.lineChart.categoryTimeFormat = options.lineChart.categoryTimeFormat || yawd3.defaultOptions.lineChart.categoryTimeFormat;
             options.lineChart.isArea = options.lineChart.isArea || yawd3.defaultOptions.lineChart.isArea;
         }
+        if (options.chartType == yawd3.chartKind.pie) {
+            options.pieChart = options.pieChart || yawd3.defaultOptions.pieChart;
+            options.pieChart.isDoughnut = options.pieChart.isDoughnut || yawd3.defaultOptions.pieChart.isDoughnut;
+        }
         return options;
     };
 
@@ -139,10 +159,19 @@
             .attr("width", (options.width + options.margin.left + options.margin.right))
             .attr("height", (options.height + options.margin.top + options.margin.bottom))
             .attr("viewBox", "0 0 " + (options.width + options.margin.left + options.margin.right) + " " + (options.height + options.margin.top + options.margin.bottom))
-            .append("g")
-            .attr("transform", "translate(" + options.margin.left + "," + options.margin.top + ")")
+            .append("g")            
             .attr("data-chart-type", options.chartType);
 
+        switch (options.chartType) {
+            case yawd3.chartKind.column:
+            case yawd3.chartKind.line:
+                chart.attr("transform", "translate(" + options.margin.left + "," + options.margin.top + ")");
+                break;
+            case yawd3.chartKind.pie: 
+                chart.attr("transform", "translate(" + (options.width / 2) + "," + (options.height / 2) + ")");
+                break;
+        }
+        
         return chart;
     };
 
@@ -199,7 +228,7 @@
 
     function createColumnChart(options, data) {
         var chart = chartSetup(options);
-        var columnChart = setupColumnChart(data, options.columnChart.isStacked, options.height, options.width);
+        var columnChart = setupColumnChart(data, options.columnChart.isStacked, options.height, options.width);        
 
         var categories = chart.selectAll("g.category")
             .data(data.categories, function (d) {
@@ -257,7 +286,6 @@
 
     function updateColumnChart(options, data) {
         var columnChart = setupColumnChart(data, options.columnChart.isStacked, options.height, options.width);
-
         var chart = d3.select(options.chartId + " g");
 
         chart.select(".x.axis")
@@ -296,7 +324,7 @@
             });
 
         columns.exit()
-            .style("fill", "#E63232")
+            .style("fill", options.transition.exitColour)
             .transition()
             .duration(options.transition.delay.remove)
             .attr("y", columnChart.y(0))
@@ -501,7 +529,7 @@
         sets.exit()
             .selectAll("path")
             .style("stroke-width", 3)
-            .style("stroke", "#E63232")
+            .style("stroke", options.transition.exitColour)
             .transition()
             .duration(options.transition.delay.remove)
             .remove();
@@ -533,6 +561,87 @@
             .style("stroke", function (d, catIx, setIx) {
                 return d.colour || d3.scale.category20().range()[setIx % 20]
             });
+    };
+
+    //pie
+
+    function setupPieChart(isDoughnut, height, width) {
+        var radius = Math.min(width, height) / 2;
+
+        var arc = d3.svg.arc()
+                .outerRadius(radius * 0.99)
+                .innerRadius(isDoughnut == true ? radius * 0.6 : 0);
+
+        var pie = d3.layout.pie()
+                .value(function (d) {
+                    return d.value;
+                })
+                .sort(null);
+
+        var arcTween = function (a) {
+            var i = d3.interpolate(this._current, a);
+            this._current = i(0);
+            
+            return function (t) {
+                return arc(i(t));
+            };
+        };
+
+        return {
+            arc: arc,
+            pie: pie,
+            arcTween: arcTween            
+        }
+    };
+
+    function createPieChart(options, data) {
+        var chart = chartSetup(options);
+        var pieChart = setupPieChart(options.pieChart.isDoughnut, options.height, options.width);
+
+        chart.selectAll("path")
+            .data(pieChart.pie(data.sets), function (d) {
+                return d.data.name;
+            })
+            .enter()
+            .append("path")
+            .attr("class", "pie")
+            .attr("d", pieChart.arc)
+            .style("fill", function (d, ix) {
+                return d.data.fill || d3.scale.category20().range()[ix % 20];
+            })
+            .each(function (d) { this._current = d; });
+    };
+
+    function updatePieChart(options, data) {
+        var pieChart = setupPieChart(options.pieChart.isDoughnut, options.height, options.width);
+
+        var chart = d3.select(options.chartId + " g");
+
+        var sets = chart.selectAll("path.pie")
+            .data(pieChart.pie(data.sets), function (d) {
+                return d.data.name;
+            });
+
+        sets.exit()
+            .style("fill", options.transition.exitColour)
+            .transition()
+            .duration(options.transition.delay.remove)
+            .remove();
+
+        sets.enter()
+            .append("path")
+            .attr("class", "pie")
+            .attr("d", pieChart.arc)
+            .style("fill", function (d, ix) {
+                return d.data.fill || d3.scale.category20().range()[ix % 20];
+            })
+            .each(function (d) { this._current = d; });
+        
+        sets.transition()
+            .duration(options.transition.delay.update)            
+            .attrTween("d", pieChart.arcTween)
+            .attr("transform", null);
+
     };
 
     return yawd3;
