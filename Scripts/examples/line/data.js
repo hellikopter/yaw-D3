@@ -4,20 +4,42 @@
     data={
             sets:[ {
                 name: setName1,
-                values: [set1category1,set1category2, ...],
+                values: [{
+                    x: set1val1x,
+                    y: set1val1y
+                },{
+                    x: set1val2x,
+                    y: set1val2y
+                },
+                ...
+                ],
                 colour: colour1
             }, {
                 name: setName2, 
-                values: [set1category1,set1category2, ...],
+                values: [{
+                    x: set2val1x,
+                    y: set2val1y
+                },{       
+                    x: set2val2x,
+                    y: set2val2y
+                },
+                ...
+                ],
                 colour: colour2
             },{
                 name: setName3, 
-                values: [set1category1,set1category2, ...],
+                values: [{
+                    x: set3val1x,
+                    y: set3val1y
+                },{       
+                    x: set3val2x,
+                    y: set3val2y
+                },
+                ...],
                 colour: colour3
             },{
                 ...
-            }],
-            categories:[categoryName1,categoryName2, ...],
+            }]
         }
 */
 

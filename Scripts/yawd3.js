@@ -16,7 +16,8 @@
     yawd3.chartKind = {
         column: 1,
         line: 2,
-        pie: 3
+        pie: 3,
+        bubble: 4
     };
 
     yawd3.defaultOptions = {
@@ -54,7 +55,12 @@
 
         pieChart: {
             isDoughnut: false
-        }
+        },
+
+        bubbleChart: {
+            isTimeCategory: false,
+            categoryTimeFormat: "%Y-%m-%d"
+        },
     };
 
     yawd3.drawChart = function (options, data) {
@@ -71,6 +77,9 @@
                 break;
             case yawd3.chartKind.pie:
                 createPieChart(options, data);
+                break;
+            case yawd3.chartKind.bubble:
+                createBubbleChart(options, data);
                 break;
         }
     };
@@ -91,6 +100,9 @@
             case yawd3.chartKind.pie:
                 updatePieChart(options, data);
                 break;
+            case yawd3.chartKind.bubble:
+                updateBubbleChart(options, data);
+                break;
         }
     };
 
@@ -101,6 +113,8 @@
             ((chartType == yawd3.chartKind.line) &&
             ((!data) || (data == null) || (!data.sets) || (data.sets == null) || (Array.isArray(data.sets) == false))) ||
             ((chartType == yawd3.chartKind.pie) &&
+            ((!data) || (data == null) || (!data.sets) || (data.sets == null) || (Array.isArray(data.sets) == false))) ||
+            ((chartType == yawd3.chartKind.bubble) &&
             ((!data) || (data == null) || (!data.sets) || (data.sets == null) || (Array.isArray(data.sets) == false))))
             throw new Error("Invalid data format");
     };
@@ -114,7 +128,8 @@
             throw new Error("No chart type");
         if ((options.chartType != yawd3.chartKind.column) &&
             (options.chartType != yawd3.chartKind.line) &&
-            (options.chartType != yawd3.chartKind.pie))
+            (options.chartType != yawd3.chartKind.pie) &&
+            (options.chartType != yawd3.chartKind.bubble))
             throw new Error("Invalid chart type");
     };
 
@@ -149,6 +164,11 @@
             options.pieChart = options.pieChart || yawd3.defaultOptions.pieChart;
             options.pieChart.isDoughnut = options.pieChart.isDoughnut || yawd3.defaultOptions.pieChart.isDoughnut;
         }
+        if (options.chartType == yawd3.chartKind.bubble) {
+            options.bubbleChart = options.bubbleChart || yawd3.defaultOptions.bubbleChart;
+            options.bubbleChart.isTimeCategory = options.bubbleChart.isTimeCategory || yawd3.defaultOptions.bubbleChart.isTimeCategory;
+            options.bubbleChart.categoryTimeFormat = options.bubbleChart.categoryTimeFormat || yawd3.defaultOptions.bubbleChart.categoryTimeFormat;
+        }
         return options;
     };
 
@@ -165,6 +185,7 @@
         switch (options.chartType) {
             case yawd3.chartKind.column:
             case yawd3.chartKind.line:
+            case yawd3.chartKind.bubble:
                 chart.attr("transform", "translate(" + options.margin.left + "," + options.margin.top + ")");
                 break;
             case yawd3.chartKind.pie: 
@@ -443,14 +464,28 @@
         if (isArea == true)
             line = d3.svg.area()
                 .interpolate(interpolation)
-                .x(function (d) { return isTimeCategory == true ? x(d3.time.format(categoryTimeFormat).parse(d.x)) : x(d.x); })
+                .x(function (d) {
+                    if (isTimeCategory == true)
+                        return x(d3.time.format(categoryTimeFormat).parse(d.x));
+                    else
+                        return x(d.x);
+                })
                 .y0(height)
-                .y1(function (d) { return y(d.y); });
+                .y1(function (d) {
+                    return y(d.y);
+                });
         else
             line = d3.svg.line()
                 .interpolate(interpolation)
-                .x(function (d) { return isTimeCategory == true ? x(d3.time.format(categoryTimeFormat).parse(d.x)) : x(d.x); })
-                .y(function (d) { return y(d.y); });
+                .x(function (d) {
+                    if (isTimeCategory == true)
+                        return x(d3.time.format(categoryTimeFormat).parse(d.x));
+                    else
+                        return x(d.x);
+                })
+                .y(function (d) {
+                    return y(d.y);
+                });
 
         return {
             x: x,
@@ -642,6 +677,255 @@
             .attrTween("d", pieChart.arcTween)
             .attr("transform", null);
 
+    };
+
+    //bubble
+
+    function setupBubbleChart(data, isTimeCategory, categoryTimeFormat, height, width) {
+        var x = null;
+        var xMinValue = null;
+        var xMaxValue = null;
+        var yMinValue = null;
+        var yMaxValue = null;
+        var colours = {};
+
+        var minX=function(values){
+            return d3.min(values, function (val) {
+                if (isTimeCategory == true)
+                    return d3.time.format(categoryTimeFormat).parse(val.x);
+                else
+                    return val.x;
+            });
+        };
+
+        var maxX=function(values){
+            return d3.max(values, function (val) {
+                if (isTimeCategory == true)
+                    return d3.time.format(categoryTimeFormat).parse(val.x);
+                else
+                    return val.x;
+            });
+        };
+
+        var minY=function(values){
+            return d3.min(values, function (val) {
+                return val.y;
+            });
+        };
+
+        var maxY=function(values){
+            return d3.max(values, function (val) {
+                return val.y;
+            });
+        };
+
+        xMinValue = d3.min(data.sets, function (set) {
+            return minX(set.values);
+        });
+
+        xMaxValue = d3.max(data.sets, function (set) {
+            return maxX(set.values);
+        });
+
+        yMinValue = d3.min(data.sets, function (set) {
+            return minY(set.values);
+        });
+
+        yMaxValue = d3.max(data.sets, function (set) {
+            return maxY(set.values);
+        });
+
+        if (isTimeCategory == true)
+            x = d3.time.scale()
+                .domain([xMinValue, xMaxValue])
+                .range([0, width]);
+        else
+            x = d3.scale.linear()
+                .domain([xMinValue, xMaxValue])
+                .range([0, width]);
+
+        var y = d3.scale.linear()
+            .domain([yMinValue, yMaxValue])
+            .range([height, 0]);
+
+        var xAxis = d3.svg.axis()
+            .scale(x)
+            .orient("bottom");
+
+        var yAxis = d3.svg.axis()
+            .scale(y)
+            .innerTickSize(10)
+            .ticks(10)
+            .orient("left");
+
+        var selectedSetValues = function (name) {
+            return data.sets.filter(function (set) {
+                return set.name == name;
+            })[0].values;
+        };
+
+        for (var i = 0; i < data.sets.length; i++) {
+            var colour = data.sets[i].colour || d3.scale.category20().range()[i % 20];
+
+            colours[data.sets[i].name] = d3.scale.linear()
+                .domain([
+                    minY(data.sets[i].values),
+                    maxY(data.sets[i].values)
+                ])
+                .range([
+                    d3.rgb(colour).brighter(),
+                    d3.rgb(colour).darker(2)
+                ]);
+        }
+
+        return {
+            x: x,
+            y: y,
+            xAxis: xAxis,
+            yAxis: yAxis,
+            selectedSetValues: selectedSetValues,
+            colours: colours
+        }
+    }
+
+    function createBubbleChart(options, data) {
+        var chart = chartSetup(options);
+        var bubbleChart = setupBubbleChart(data, options.bubbleChart.isTimeCategory, options.bubbleChart.categoryTimeFormat,
+            options.height, options.width);        
+
+        var sets=chart.selectAll(".bubble")
+            .data(data.sets.map(function (d) {
+                return d.name;
+            }))
+            .enter()
+            .append("g")
+            .attr("class", "bubble");
+
+        sets.selectAll("circle")
+            .data(bubbleChart.selectedSetValues, function (d) {
+                return d.x + ":" + d.y;
+            })
+            .enter()
+            .append("circle")
+            .style("fill", function (d, catIx, setIx) {
+                return bubbleChart.colours[data.sets[setIx].name](d.y);
+            })
+            .style("stroke", function (d, catIx, setIx) {
+                return d.colour || d3.scale.category20().range()[setIx % 20]
+            })
+            .style("stroke-width", 2)
+            .style("opacity", 0.8)
+            .attr("r", function (d) {
+                return d3.max([Math.sqrt(options.height - bubbleChart.y(d.size)), 1]);
+            })
+            .attr("cx", function (d) {
+                var x = null;
+                if (options.bubbleChart.isTimeCategory == true)
+                    x = d3.time.format(options.bubbleChart.categoryTimeFormat).parse(d.x);
+                else
+                    x = d.x;
+                return bubbleChart.x(x);
+            })
+            .attr("cy", function (d) {
+                return bubbleChart.y(d.y);
+            });
+
+        chart.append("g")
+            .attr("class", "x axis")
+            .attr("transform", "translate(0," + options.height + ")")
+            .call(bubbleChart.xAxis);
+
+        chart.append("g")
+            .attr("class", "y axis")
+            .call(bubbleChart.yAxis);
+    };
+
+    function updateBubbleChart(options, data) {
+        var bubbleChart = setupBubbleChart(data, options.bubbleChart.isTimeCategory, options.bubbleChart.categoryTimeFormat,
+            options.height, options.width);
+
+        var chart = d3.select(options.chartId + " g");
+
+        chart.select(".x.axis")
+            .transition()
+            .duration(options.transition.delay.update)
+            .ease("sin-in-out")
+            .call(bubbleChart.xAxis);
+
+        chart.select(".y.axis")
+            .transition()
+            .duration(options.transition.delay.update)
+            .ease("sin-in-out")
+            .call(bubbleChart.yAxis);
+
+        var sets = chart.selectAll("g.bubble")
+            .data(data.sets.map(function (d) {
+                return d.name;
+            }));
+
+        sets.exit()
+            .transition()
+            .duration(options.transition.delay.remove)
+            .remove();
+
+        sets.enter()
+            .append("g")
+            .attr("class", "bubble");
+
+        var values=sets.selectAll("circle")
+            .data(bubbleChart.selectedSetValues, function (d) {
+                return d.x + ":" + d.y;
+            });
+        
+        values.exit()
+            .style("fill", options.transition.exitColour)
+            .transition()
+            .duration(options.transition.delay.remove)
+            .remove();
+
+        values.enter()
+            .append("circle")
+            .style("fill", function (d, catIx, setIx) {
+                return bubbleChart.colours[data.sets[setIx].name](d.y);
+            })
+            .style("stroke", function (d, catIx, setIx) {
+                return d.colour || d3.scale.category20().range()[setIx % 20]
+            })
+            .style("stroke-width",2)
+            .style("opacity", 0.8)
+            .attr("r", function (d) {
+                return d3.max([Math.sqrt(options.height - bubbleChart.y(d.size)), 1]);
+            })
+            .attr("cx", function (d) {
+                var x = null;
+                if (options.bubbleChart.isTimeCategory == true)
+                    x = d3.time.format(options.bubbleChart.categoryTimeFormat).parse(d.x);
+                else
+                    x = d.x;
+                return bubbleChart.x(x);
+            })
+            .attr("cy", function (d) {
+                return bubbleChart.y(d.y);
+            });
+
+        values.transition()
+            .duration(options.transition.delay.update)                        
+            .attr("cx", function (d) {
+                var x = null;
+                if (options.bubbleChart.isTimeCategory == true)
+                    x = d3.time.format(options.bubbleChart.categoryTimeFormat).parse(d.x);
+                else
+                    x = d.x;
+                return bubbleChart.x(x);
+            })
+            .attr("cy", function (d) {
+                return bubbleChart.y(d.y);
+            })
+            .transition()
+            .duration(options.transition.delay.update)
+            .attr("r", function (d) {
+                return d3.max([Math.sqrt(options.height - bubbleChart.y(d.size)), 1]);
+            });
     };
 
     return yawd3;

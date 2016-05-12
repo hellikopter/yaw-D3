@@ -60,6 +60,9 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Scripts\examples\bubble\data.js" />
+    <Content Include="Scripts\examples\bubble\example.js" />
+    <Content Include="Scripts\examples\bubble\index.html" />
     <Content Include="Scripts\examples\column\data.js" />
     <Content Include="Scripts\examples\column\example.js" />
     <Content Include="Scripts\examples\column\index.html" />
