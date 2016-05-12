@@ -1,7 +1,7 @@
 # yaw-D3
 Yet Another Wrapper for [D3](https://d3js.org)
 
-##### Tasks:
+#### Tasks:
 ###### Charts
 - [x] Column chart
 - [x] Line chart
@@ -11,6 +11,7 @@ Yet Another Wrapper for [D3](https://d3js.org)
 - [ ] Radial diagram
 - [ ] Chord diagram
 - [ ] Bubble pack
+
 ###### Other
 - [ ] Add click events
 - [ ] Review data schemes (ongoing)
