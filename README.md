@@ -2,7 +2,6 @@
 Yet Another Wrapper for [D3](https://d3js.org)
 
 #### Tasks:
-###### Charts
 - [x] Column chart
 - [x] Line chart
 - [x] Pie chart
@@ -11,8 +10,6 @@ Yet Another Wrapper for [D3](https://d3js.org)
 - [ ] Radial diagram
 - [ ] Chord diagram
 - [ ] Bubble pack
-
-###### Other
 - [ ] Add click events
 - [ ] Review data schemes (ongoing)
 - [ ] Review code (ongoing)
