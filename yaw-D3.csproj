@@ -69,6 +69,9 @@
     <Content Include="Scripts\examples\line\data.js" />
     <Content Include="Scripts\examples\line\example.js" />
     <Content Include="Scripts\examples\line\index.html" />
+    <Content Include="Scripts\examples\pack\data.js" />
+    <Content Include="Scripts\examples\pack\example.js" />
+    <Content Include="Scripts\examples\pack\index.html" />
     <Content Include="Scripts\examples\pie\data.js" />
     <Content Include="Scripts\examples\pie\example.js" />
     <Content Include="Scripts\examples\pie\index.html" />

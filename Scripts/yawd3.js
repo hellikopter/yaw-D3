@@ -17,7 +17,8 @@
         column: 1,
         line: 2,
         pie: 3,
-        bubble: 4
+        bubble: 4,
+        pack: 5
     };
 
     yawd3.defaultOptions = {
@@ -81,6 +82,9 @@
             case yawd3.chartKind.bubble:
                 createBubbleChart(options, data);
                 break;
+            case yawd3.chartKind.pack :
+                createPackChart(options, data);
+                break;
         }
     };
 
@@ -103,6 +107,9 @@
             case yawd3.chartKind.bubble:
                 updateBubbleChart(options, data);
                 break;
+            case yawd3.chartKind.pack:
+                updatePackChart(options, data);
+                break;
         }
     };
 
@@ -115,7 +122,9 @@
             ((chartType == yawd3.chartKind.pie) &&
             ((!data) || (data == null) || (!data.sets) || (data.sets == null) || (Array.isArray(data.sets) == false))) ||
             ((chartType == yawd3.chartKind.bubble) &&
-            ((!data) || (data == null) || (!data.sets) || (data.sets == null) || (Array.isArray(data.sets) == false))))
+            ((!data) || (data == null) || (!data.sets) || (data.sets == null) || (Array.isArray(data.sets) == false))) ||
+            ((chartType == yawd3.chartKind.pack) &&
+            ((!data) || (data == null) || (Array.isArray(data) == false))))
             throw new Error("Invalid data format");
     };
 
@@ -129,7 +138,8 @@
         if ((options.chartType != yawd3.chartKind.column) &&
             (options.chartType != yawd3.chartKind.line) &&
             (options.chartType != yawd3.chartKind.pie) &&
-            (options.chartType != yawd3.chartKind.bubble))
+            (options.chartType != yawd3.chartKind.bubble) &&
+            (options.chartType != yawd3.chartKind.pack))
             throw new Error("Invalid chart type");
     };
 
@@ -186,6 +196,7 @@
             case yawd3.chartKind.column:
             case yawd3.chartKind.line:
             case yawd3.chartKind.bubble:
+            case yawd3.chartKind.pack:
                 chart.attr("transform", "translate(" + options.margin.left + "," + options.margin.top + ")");
                 break;
             case yawd3.chartKind.pie: 
@@ -525,7 +536,7 @@
                 return lineChart.line(d.values);
             })
             .style("stroke", function (d, ix) {
-                return d.colour || d3.scale.category20().range()[ix % 20]
+                return d.colour || d3.scale.category20().range()[ix % 20];
             });
 
         chart.append("g")
@@ -594,7 +605,7 @@
                 return lineChart.line(data.sets[setIx].values);
             })
             .style("stroke", function (d, catIx, setIx) {
-                return d.colour || d3.scale.category20().range()[setIx % 20]
+                return d.colour || d3.scale.category20().range()[setIx % 20];
             });
     };
 
@@ -811,7 +822,7 @@
                 return bubbleChart.colours[data.sets[setIx].name](d.y);
             })
             .style("stroke", function (d, catIx, setIx) {
-                return d.colour || d3.scale.category20().range()[setIx % 20]
+                return d.colour || d3.scale.category20().range()[setIx % 20];
             })
             .style("stroke-width", 2)
             .style("opacity", 0.8)
@@ -889,7 +900,7 @@
                 return bubbleChart.colours[data.sets[setIx].name](d.y);
             })
             .style("stroke", function (d, catIx, setIx) {
-                return d.colour || d3.scale.category20().range()[setIx % 20]
+                return d.colour || d3.scale.category20().range()[setIx % 20];
             })
             .style("stroke-width",2)
             .style("opacity", 0.8)
@@ -926,6 +937,127 @@
             .attr("r", function (d) {
                 return d3.max([Math.sqrt(options.height - bubbleChart.y(d.size)), 1]);
             });
+    };
+
+    //pack
+
+    function setupPackChart(data, height, width) {
+        var diameter = d3.min([width, height]);
+
+        var pack = d3.layout.pack()
+            .sort(null)
+            .size([diameter, diameter])
+            .value(function (d) {
+                return d.size;
+            });
+
+        return {
+            pack: pack
+        }
+    };
+
+    function createPackChart(options, data) {
+        var chart = chartSetup(options);
+        var packChart = setupPackChart(data, options.height, options.width);
+
+        var bubbles = chart.selectAll(".bubble")
+            .data(packChart.pack.nodes({ name: "ROOT", children: data }), function (d) {
+                return d.name;
+            })
+            .enter()
+            .append("g")
+            .attr("class", "bubble")
+            .attr("transform", function (d) {
+                return "translate(" + d.x + "," + d.y + ")";
+            });
+
+        bubbles.append("circle")
+            .attr("r", 0)
+            .style("fill", function (d, ix) {
+                return d.colour || d3.scale.category20().range()[ix % 20];
+            })
+            .style("fill-opacity", function (d, ix) {
+                if (ix == 0)
+                    return 0;
+                else
+                    return 0.8;
+            })
+            .style("stroke", function (d, ix) {
+                return d.colour || d3.scale.category20().range()[ix % 20];
+            })
+            .style("stroke-width", function (d, ix) {
+                if (ix == 0)
+                    return 0;
+                else
+                    return 2;
+            })
+            .transition()
+            .duration(options.transition.delay.insert)
+            .attr("r", function (d) {
+                return d.r;
+            });        
+
+    };
+
+    function updatePackChart(options, data) {
+        var packChart = setupPackChart(data, options.height, options.width);
+        var chart = d3.select(options.chartId + " g");
+
+        var bubbles = chart.selectAll("g.bubble")
+            .data(packChart.pack.nodes({ name: "ROOT", children: data }), function (d) {
+                return d.name;
+            });
+
+        var newBubbles = bubbles.enter()
+            .append("g")
+            .attr("class", "bubble")
+            .attr("transform", function (d) {
+                return "translate(" + d.x + "," + d.y + ")";
+            });
+
+        bubbles.exit()
+            .select("circle")
+            .style("fill", options.transition.exitColour)
+            .transition()
+            .duration(options.transition.delay.remove)
+            .attr("r", 0)
+            .remove();
+
+        bubbles.exit()
+            .remove();
+
+        bubbles.transition()
+            .duration(options.transition.delay.update)
+            .attr("transform", function (d) {                
+                return "translate(" +d.x + "," +d.y + ")";
+            });
+
+        bubbles.selectAll("circle")
+            .data(packChart.pack.nodes({ name: "ROOT", children: data }), function (d) {
+                return d.name;
+            })
+            .transition()
+            .duration(options.transition.delay.update)
+            .attr("r", function (d) {
+                return d.r;
+            });
+        
+        newBubbles.append("circle")
+            .attr("r", 0)
+            .style("fill", function (d, ix) {
+                return d.colour || d3.scale.category20().range()[ix % 20];
+            })
+            .style("fill-opacity", 0.8)
+            .style("stroke", function (d, ix) {
+                return d.colour || d3.scale.category20().range()[ix % 20];
+            })
+            .style("stroke-width", 2)
+            .transition()
+            .duration(options.transition.delay.insert)
+            .attr("r", function (d) {
+                return d.r;
+            });
+
     };
 
     return yawd3;

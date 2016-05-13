@@ -9,7 +9,7 @@ Yet Another Wrapper for [D3](https://d3js.org)
 - [ ] Tree diagram
 - [ ] Radial diagram
 - [ ] Chord diagram
-- [ ] Bubble pack
+- [x] Bubble pack
 - [ ] Add click events
 - [ ] Review data schemes (ongoing)
 - [ ] Review code (ongoing)
