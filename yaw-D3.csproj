@@ -75,6 +75,9 @@
     <Content Include="Scripts\examples\pie\data.js" />
     <Content Include="Scripts\examples\pie\example.js" />
     <Content Include="Scripts\examples\pie\index.html" />
+    <Content Include="Scripts\examples\tree\data.js" />
+    <Content Include="Scripts\examples\tree\example.js" />
+    <Content Include="Scripts\examples\tree\index.html" />
     <Content Include="Scripts\yawd3.js" />
     <Content Include="Web.config" />
   </ItemGroup>

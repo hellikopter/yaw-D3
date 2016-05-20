@@ -18,7 +18,8 @@
         line: 2,
         pie: 3,
         bubble: 4,
-        pack: 5
+        pack: 5,
+        tree: 6
     };
 
     yawd3.defaultOptions = {
@@ -62,6 +63,10 @@
             isTimeCategory: false,
             categoryTimeFormat: "%Y-%m-%d"
         },
+
+        treeDiagram: {
+            nodeWidth: 250
+        }
     };
 
     yawd3.drawChart = function (options, data) {
@@ -84,6 +89,9 @@
                 break;
             case yawd3.chartKind.pack :
                 createPackChart(options, data);
+                break;
+            case yawd3.chartKind.tree:
+                createTreeDiagram(options, data);
                 break;
         }
     };
@@ -110,6 +118,9 @@
             case yawd3.chartKind.pack:
                 updatePackChart(options, data);
                 break;
+            case yawd3.chartKind.tree:
+                throw new Error("Tree diagram cannot be updated");
+                break;
         }
     };
 
@@ -124,7 +135,9 @@
             ((chartType == yawd3.chartKind.bubble) &&
             ((!data) || (data == null) || (!data.sets) || (data.sets == null) || (Array.isArray(data.sets) == false))) ||
             ((chartType == yawd3.chartKind.pack) &&
-            ((!data) || (data == null) || (Array.isArray(data) == false))))
+            ((!data) || (data == null) || (Array.isArray(data) == false))) ||
+            ((chartType == yawd3.chartKind.tree) &&
+            ((!data) || (data == null) || (!data.name) || (data.name == null) || (!data.children) || (data.children==null) || (Array.isArray(data.children) == false))))
             throw new Error("Invalid data format");
     };
 
@@ -139,7 +152,8 @@
             (options.chartType != yawd3.chartKind.line) &&
             (options.chartType != yawd3.chartKind.pie) &&
             (options.chartType != yawd3.chartKind.bubble) &&
-            (options.chartType != yawd3.chartKind.pack))
+            (options.chartType != yawd3.chartKind.pack) &&
+            (options.chartType != yawd3.chartKind.tree))
             throw new Error("Invalid chart type");
     };
 
@@ -179,6 +193,10 @@
             options.bubbleChart.isTimeCategory = options.bubbleChart.isTimeCategory || yawd3.defaultOptions.bubbleChart.isTimeCategory;
             options.bubbleChart.categoryTimeFormat = options.bubbleChart.categoryTimeFormat || yawd3.defaultOptions.bubbleChart.categoryTimeFormat;
         }
+        if (options.chartType == yawd3.chartKind.tree) {
+            options.treeDiagram = options.treeDiagram || yawd3.defaultOptions.treeDiagram;
+            options.treeDiagram.nodeWidth = options.treeDiagram.nodeWidth || yawd3.defaultOptions.treeDiagram.nodeWidth;
+        }
         return options;
     };
 
@@ -197,6 +215,7 @@
             case yawd3.chartKind.line:
             case yawd3.chartKind.bubble:
             case yawd3.chartKind.pack:
+            case yawd3.chartKind.tree:
                 chart.attr("transform", "translate(" + options.margin.left + "," + options.margin.top + ")");
                 break;
             case yawd3.chartKind.pie: 
@@ -1058,6 +1077,63 @@
                 return d.r;
             });
 
+    };
+
+    //tree
+
+    function setupTreeDiagram(data, height, width) {
+        var tree = d3.layout.tree()
+            .size([height - 20, width - 20]);
+
+        var diagonal = d3.svg.diagonal()
+            .projection(function (d) { return [d.y, d.x]; });
+
+        return {
+            tree: tree,
+            diagonal: diagonal
+        }
+    };
+
+    function createTreeDiagram(options, data) {
+        var chart = chartSetup(options);
+        var treeDiagram = setupTreeDiagram(data, options.height, options.width);
+
+        var nodes = treeDiagram.tree
+            .nodes(data)
+            .reverse();
+
+        var links = treeDiagram.tree
+            .links(nodes);
+
+        nodes.forEach(function (d) {
+            d.y = d.depth * options.treeDiagram.nodeWidth;
+        });
+        
+        var nodesElements= chart.selectAll(".node")
+            .data(nodes)
+            .enter()
+            .append("g")
+            .attr("class", "node")
+            .attr("transform", function (d) {
+                return "translate(" + d.y + "," + d.x + ")";
+            });
+
+        nodesElements.append("circle")
+            .attr("r", 5);
+
+        nodesElements.append("text")
+            .attr("x", 13)
+            .attr("dy", ".35em")
+            .text(function (d) {
+                return d.name;
+            });
+
+        chart.selectAll(".link")
+            .data(links)
+            .enter()
+            .insert("path", "g")
+            .attr("class", "link")
+            .attr("d", treeDiagram.diagonal);
     };
 
     return yawd3;

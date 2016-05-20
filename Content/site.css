@@ -21,3 +21,18 @@
     stroke: #777;
     stroke-width: 1;
 }
+
+.link {
+	fill: none;
+	stroke: #ccc;
+	stroke-width: 2px;
+}
+
+.node circle {
+	stroke: steelblue;
+}
+
+circle text {
+    fill: #777;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}

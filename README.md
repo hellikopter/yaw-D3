@@ -6,7 +6,7 @@ Yet Another Wrapper for [D3](https://d3js.org)
 - [x] Line chart
 - [x] Pie chart
 - [x] Bubble heatmap
-- [ ] Tree diagram
+- [x] Tree diagram
 - [ ] Radial diagram
 - [ ] Chord diagram
 - [x] Bubble pack
