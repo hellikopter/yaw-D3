@@ -7,7 +7,7 @@ Yet Another Wrapper for [D3](https://d3js.org)
 - [x] Pie chart
 - [x] Bubble heatmap
 - [x] Tree diagram
-- [ ] Radial diagram
+- [x] Radial diagram
 - [ ] Chord diagram
 - [x] Bubble pack
 - [ ] Add click events

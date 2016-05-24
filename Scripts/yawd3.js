@@ -19,7 +19,8 @@
         pie: 3,
         bubble: 4,
         pack: 5,
-        tree: 6
+        tree: 6,
+        radial: 7
     };
 
     yawd3.defaultOptions = {
@@ -93,6 +94,9 @@
             case yawd3.chartKind.tree:
                 createTreeDiagram(options, data);
                 break;
+            case yawd3.chartKind.radial:
+                createRadialDiagram(options, data);
+                break;
         }
     };
 
@@ -121,6 +125,9 @@
             case yawd3.chartKind.tree:
                 throw new Error("Tree diagram cannot be updated");
                 break;
+            case yawd3.chartKind.radial:
+                updateRadialDiagram(options, data);
+                break;
         }
     };
 
@@ -137,7 +144,9 @@
             ((chartType == yawd3.chartKind.pack) &&
             ((!data) || (data == null) || (Array.isArray(data) == false))) ||
             ((chartType == yawd3.chartKind.tree) &&
-            ((!data) || (data == null) || (!data.name) || (data.name == null) || (!data.children) || (data.children==null) || (Array.isArray(data.children) == false))))
+            ((!data) || (data == null) || (!data.name) || (data.name == null) || (!data.children) || (data.children==null) || (Array.isArray(data.children) == false))) ||
+            ((chartType == yawd3.chartKind.radial) &&
+            ((!data) || (data == null) || (!data.children) || (data.children == null) || (Array.isArray(data.children) == false))))
             throw new Error("Invalid data format");
     };
 
@@ -153,7 +162,8 @@
             (options.chartType != yawd3.chartKind.pie) &&
             (options.chartType != yawd3.chartKind.bubble) &&
             (options.chartType != yawd3.chartKind.pack) &&
-            (options.chartType != yawd3.chartKind.tree))
+            (options.chartType != yawd3.chartKind.tree) &&
+            (options.chartType != yawd3.chartKind.radial))
             throw new Error("Invalid chart type");
     };
 
@@ -215,10 +225,11 @@
             case yawd3.chartKind.line:
             case yawd3.chartKind.bubble:
             case yawd3.chartKind.pack:
-            case yawd3.chartKind.tree:
+            case yawd3.chartKind.tree:            
                 chart.attr("transform", "translate(" + options.margin.left + "," + options.margin.top + ")");
                 break;
-            case yawd3.chartKind.pie: 
+            case yawd3.chartKind.pie:
+            case yawd3.chartKind.radial:
                 chart.attr("transform", "translate(" + (options.width / 2) + "," + (options.height / 2) + ")");
                 break;
         }
@@ -1134,6 +1145,114 @@
             .insert("path", "g")
             .attr("class", "link")
             .attr("d", treeDiagram.diagonal);
+    };
+
+    //radial
+
+    function setupRadialDiagram(data, height, width) {
+        var radius = d3.min([width, height]) / 2;
+
+        var partition = d3.layout.partition()
+            .size([2 * Math.PI, radius * radius])
+            .value(function (d) {
+                return d.size;
+            });
+
+        var arc = d3.svg.arc()
+            .startAngle(function (d) {
+                return d.x;
+            })
+            .endAngle(function (d) {
+                return d.x + d.dx;
+            })
+            .innerRadius(function (d) {
+                return Math.sqrt(d.y);
+            })
+            .outerRadius(function (d) {
+                return Math.sqrt(d.y + d.dy);
+            });
+
+        var arcTween = function (a) {
+            var selfArc = this;
+            var i = d3.interpolate({
+                x: selfArc._current.x,
+                dx: selfArc._current.dx
+            }, a);
+
+            return function (t) {
+                selfArc._current = i(t);
+                return arc(i(t));
+            };
+        };
+
+        return {            
+            partition: partition,
+            arc: arc,
+            arcTween: arcTween
+        }
+    };
+
+    function createRadialDiagram(options, data) {
+        var chart = chartSetup(options);
+        var radialDiagram = setupRadialDiagram(data, options.height, options.width);
+
+        var nodes = radialDiagram.partition
+            .nodes(data)
+            .filter(function (d) {
+                return d.name;
+            });
+
+        var arcs = chart.selectAll(".sequence")
+            .data(nodes, function (d) {
+                return d.name;
+            })
+            .enter()
+            .append("path")
+            .attr("class", "sequence")
+            .style("fill", function (d, ix) {
+                return d.colour || d3.scale.category20().range()[ix % 20];
+            })
+            .attr("d", radialDiagram.arc)
+            .each(function (d) { this._current = d; });
+    };
+
+    function updateRadialDiagram(options, data) {
+        var radialDiagram = setupRadialDiagram(data, options.height, options.width);
+        var chart = d3.select(options.chartId + " g");
+
+        var nodes = radialDiagram.partition
+            .nodes(data)
+            .filter(function (d) {
+                return d.name;
+            });
+
+        var sequences = chart.selectAll("path.sequence")
+            .data(nodes, function (d) {
+                return d.name;
+            });
+
+        sequences.enter()
+            .append("path")
+            .attr("class", "sequence")
+            .style("fill", function (d, ix) {
+                return d.colour || d3.scale.category20().range()[ix % 20];
+            })
+            .attr("d", radialDiagram.arc)
+            .each(function (d) {
+                this._current = d;
+            });
+
+        sequences.exit()
+            .style("fill", options.transition.exitColour)
+            .transition()
+            .duration(options.transition.delay.remove)
+            .remove();
+            
+        sequences.transition()
+            .duration(options.transition.delay.update)
+            .attrTween("d", radialDiagram.arcTween)
+        .attr("transform", null);        
+
     };
 
     return yawd3;
