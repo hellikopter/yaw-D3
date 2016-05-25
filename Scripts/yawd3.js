@@ -20,7 +20,8 @@
         bubble: 4,
         pack: 5,
         tree: 6,
-        radial: 7
+        radial: 7,
+        chord: 8
     };
 
     yawd3.defaultOptions = {
@@ -97,6 +98,9 @@
             case yawd3.chartKind.radial:
                 createRadialDiagram(options, data);
                 break;
+            case yawd3.chartKind.chord:
+                createChordDiagram(options, data);
+                break;
         }
     };
 
@@ -128,6 +132,9 @@
             case yawd3.chartKind.radial:
                 updateRadialDiagram(options, data);
                 break;
+            case yawd3.chartKind.tree:
+                throw new Error("Chord diagram cannot be updated");
+                break;
         }
     };
 
@@ -146,7 +153,9 @@
             ((chartType == yawd3.chartKind.tree) &&
             ((!data) || (data == null) || (!data.name) || (data.name == null) || (!data.children) || (data.children==null) || (Array.isArray(data.children) == false))) ||
             ((chartType == yawd3.chartKind.radial) &&
-            ((!data) || (data == null) || (!data.children) || (data.children == null) || (Array.isArray(data.children) == false))))
+            ((!data) || (data == null) || (!data.children) || (data.children == null) || (Array.isArray(data.children) == false))) ||
+            ((chartType == yawd3.chartKind.chord) &&
+            ((!data) || (data == null) || (!data.sets) || (data.sets == null) || (Array.isArray(data.sets) == false))))
             throw new Error("Invalid data format");
     };
 
@@ -163,7 +172,8 @@
             (options.chartType != yawd3.chartKind.bubble) &&
             (options.chartType != yawd3.chartKind.pack) &&
             (options.chartType != yawd3.chartKind.tree) &&
-            (options.chartType != yawd3.chartKind.radial))
+            (options.chartType != yawd3.chartKind.radial)&&
+            (options.chartType != yawd3.chartKind.chord))
             throw new Error("Invalid chart type");
     };
 
@@ -230,6 +240,7 @@
                 break;
             case yawd3.chartKind.pie:
             case yawd3.chartKind.radial:
+            case yawd3.chartKind.chord:
                 chart.attr("transform", "translate(" + (options.width / 2) + "," + (options.height / 2) + ")");
                 break;
         }
@@ -1253,6 +1264,80 @@
             .attrTween("d", radialDiagram.arcTween)
         .attr("transform", null);        
 
+    };
+
+    //chord
+
+    function setupChordDiagram(data, height, width) {
+        var radius = Math.min(width, height) / 2;
+        var matrix = [];
+        var keys={};
+        var colours = {};
+
+        for (var i = 0; i < data.sets.length; i++) {
+            matrix.push([]);
+            keys[data.sets[i].id.toString()] = i;                
+            colours[i.toString()] = data.sets[i].colour || d3.scale.category20().range()[i % 20];
+            data.sets[i]._relations = [];
+        }
+        for (var i = 0; i < data.sets.length; i++)
+            for (var j = 0; j < data.sets[i].relations.length; j++) {
+                data.sets[i]._relations.push(keys[data.sets[i].relations[j].toString()]);
+            }        
+        for (var i = 0; i < data.sets.length; i++)
+            for (var j = 0; j < data.sets.length; j++)
+                if (data.sets[j]._relations.indexOf(i) >= 0)
+                    matrix[i].push(1);
+                else
+                    matrix[i].push(0);
+
+        var chord = d3.layout.chord()
+            .padding(0.02);
+
+        var arc = d3.svg.arc()
+            .innerRadius(radius * 0.8)
+            .outerRadius(radius);
+
+        var linkArc = d3.svg.chord()
+            .radius(radius * 0.8);
+
+        return {
+            colours: colours,
+            matrix: matrix,
+            chord: chord,
+            arc: arc,
+            linkArc: linkArc
+        }
+    };
+
+    function createChordDiagram(options, data) {
+        var chart = chartSetup(options);
+        var chordDiagram = setupChordDiagram(data, options.height, options.width);
+
+        var nodes = chordDiagram.chord.matrix(chordDiagram.matrix);
+
+        chart.selectAll("g")
+            .data(nodes.groups)
+            .enter()
+            .append("g")            
+            .append("path")
+            .attr("class", "node")
+            .style("fill", function (d) {
+                return chordDiagram.colours[d.index.toString()];
+            })
+            .attr("d", chordDiagram.arc)
+
+        chart.selectAll(".link")
+            .data(nodes.chords)
+            .enter()
+            .append("path")
+            .attr("class", "link")
+            .style("fill", function (d) {                
+                return chordDiagram.colours[d.source.index.toString()];
+            })
+            .style("fill-opacity", 0.8)
+            .style("stroke-width", 0)
+            .attr("d", chordDiagram.linkArc);
     };
 
     return yawd3;

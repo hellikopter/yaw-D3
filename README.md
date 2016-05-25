@@ -8,8 +8,9 @@ Yet Another Wrapper for [D3](https://d3js.org)
 - [x] Bubble heatmap
 - [x] Tree diagram
 - [x] Radial diagram
-- [ ] Chord diagram
+- [x] Chord diagram
 - [x] Bubble pack
+- [ ] Add legend
 - [ ] Add click events
 - [ ] Review data schemes (ongoing)
 - [ ] Review code (ongoing)
