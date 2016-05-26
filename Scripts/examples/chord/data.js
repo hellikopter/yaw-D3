@@ -2,19 +2,15 @@
     Data format for chord diagram
     
     data={
-        name: setName,
-        children:[{
-            name: setName1
-            children: [{
-                name: setName1a,
-                children: {
-                    ...
-                    }
-                }
-              ]
-          }, {
-            name: setName2
-          }, {
+        sets: [{
+            id: setId1,
+            name: setName1,
+            relations: [setIdX, setIdY, ...]
+        }, {
+            id: setId2,
+            name: setName2,
+            relations: [setIdA, setIdB, ...]
+        }, {
                 ...
         }]
     }    
