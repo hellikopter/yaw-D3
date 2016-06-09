@@ -1,4 +1,8 @@
-﻿svg {
+﻿body {
+    font-family: 'Segoe UI', Segoe, "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+svg {
     width: 100%;
 }
 
@@ -6,7 +10,7 @@
     shape-rendering: crispEdges;
 }
 
-.axis text {
+text {
     fill: #777;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }

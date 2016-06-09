@@ -36,6 +36,7 @@
 
         chartType: null,
         chartId: null,
+        legendId: null,
 
         transition: {
             delay: {
@@ -187,6 +188,7 @@
         options.width = options.width || yawd3.defaultOptions.width;
         options.chartType = options.chartType || yawd3.defaultOptions.chartType;
         options.chartId = options.chartId || yawd3.defaultOptions.chartId;
+        options.legendId = options.legendId || yawd3.defaultOptions.legendId;
         options.transition = options.transition || yawd3.defaultOptions.transition;
         options.transition.delay = options.transition.delay || yawd3.defaultOptions.transition.delay;
         options.transition.delay.insert = options.transition.delay.insert || yawd3.defaultOptions.transition.delay.insert;
@@ -248,12 +250,95 @@
         return chart;
     };
 
+    //legend
+
+    function getDataForLegend(options, data) {
+        var items = [];
+
+        if (options.chartType == yawd3.chartKind.column)
+            for (var i = 0; i < data.sets.length; i++)
+                items.push({
+                    name: data.sets[i].name,
+                    colour: data.sets[i].colour || d3.scale.category20().range()[i % 20]
+                });
+
+        return items;
+    };
+
+    function createLegend(options, data) {
+        var items = getDataForLegend(options, data);
+
+        var legend = d3.select(options.legendId)
+            .selectAll(".legend")
+            .data(items)
+            .enter()
+            .append("g")
+            .attr("class", "legend")
+            .attr("transform", function (d, ix) {
+                return "translate(0," + (ix * 15) + ")";
+            });
+
+        legend.append("rect")
+            .attr("width", 10)
+            .attr("height", 10)
+            .style("fill", function (d) {
+                return d.colour;
+            });
+
+        legend.append("text")
+            .attr("x", 13)
+            .attr("dy", "0.7em")
+            .text(function (d) {
+                return d.name;
+            });
+    };
+
+    function updateLegend(options, data) {
+        var items = [];
+
+        for (var i = 0; i < data.sets.length; i++)
+            items.push({
+                name: data.sets[i].name,
+                colour: data.sets[i].colour || d3.scale.category20().range()[i % 20]
+            });
+
+        var legend = d3.select(options.legendId)
+            .selectAll("g.legend")
+            .data(items, function (d) {
+                return d.name;
+            });
+
+        var groups = legend.enter()
+            .append("g")
+            .attr("class", "legend")
+            .attr("transform", function (d, ix) {
+                return "translate(0," + (ix * 15) + ")";
+            });
+
+        groups.append("rect")
+            .attr("width", 10)
+            .attr("height", 10)
+            .style("fill", function (d) {
+                return d.colour;
+            });
+
+        groups.append("text")
+            .attr("x", 13)
+            .attr("dy", "0.7em")
+            .text(function (d) {
+                return d.name;
+            });
+
+        legend.exit()
+            .remove();
+    };
+
     //column
 
     function setupColumnChart(data, isStacked, height, width) {
         var x = d3.scale.ordinal()
             .domain(data.categories.map(function (d) {
-                return d.name;
+                return d;
             }))
             .rangeRoundBands([0, width], .1);
 
@@ -305,13 +390,13 @@
 
         var categories = chart.selectAll("g.category")
             .data(data.categories, function (d) {
-                return d.name;
+                return d;
             })
             .enter()
             .append("g")
             .attr("class", "category")
             .attr("transform", function (d) {
-                return "translate(" + columnChart.x(d.name) + ",0)";
+                return "translate(" + columnChart.x(d) + ",0)";
             });
 
         categories.selectAll("rect")
@@ -320,7 +405,7 @@
             .append("rect")
             .attr("class", "column")
             .style("fill", function (d, setIx) {
-                return d.fill || d3.scale.category20().range()[setIx % 20];
+                return d.colour || d3.scale.category20().range()[setIx % 20];
             })
             .attr("x", function (d) {
                 return options.columnChart.isStacked == true ? columnChart.x(d.name) : columnChart.xGroup(d.name);
@@ -355,6 +440,9 @@
         chart.append("g")
             .attr("class", "y axis")
             .call(columnChart.yAxis);
+
+        if (options.legendId != null)
+            createLegend(options, data);
     };
 
     function updateColumnChart(options, data) {
@@ -375,20 +463,20 @@
 
         var categories = chart.selectAll("g.category")
             .data(data.categories, function (d) {
-                return d.name;
-            });
+                return d;
+            });        
 
         categories.transition()
             .duration(options.transition.delay.update)
             .attr("transform", function (d) {
-                return "translate(" + columnChart.x(d.name) + ",0)";
+                return "translate(" + columnChart.x(d) + ",0)";
             });
 
         categories.enter()
             .append("g")
             .attr("class", "category")
             .attr("transform", function (d) {
-                return "translate(" + columnChart.x(d.name) + ",0)";
+                return "translate(" + columnChart.x(d) + ",0)";
             });
 
         var columns = categories.selectAll("rect.column")
@@ -426,7 +514,7 @@
             .append("rect")
             .attr("class", "column")
             .style("fill", function (d, setIx) {
-                return d.fill || d3.scale.category20().range()[setIx % 20];
+                return d.colour || d3.scale.category20().range()[setIx % 20];
             })
             .attr("x", function (d) {
                 return options.columnChart.isStacked == true ? columnChart.x(d.name) : columnChart.xGroup(d.name);
@@ -452,6 +540,12 @@
                 else
                     return columnChart.y(d.values[catIx]);
             });
+
+        categories.exit()
+            .remove();
+
+        if (options.legendId != null)
+            updateLegend(options, data);
     };
 
     //line
