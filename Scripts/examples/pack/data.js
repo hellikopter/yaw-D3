@@ -14,29 +14,40 @@
         }],        
 */
 
-var packChartData = [
+var packChartData = {
+    sets: [
     {
         name: "Apple",
-        size: 50
+        size: 50,
+        colour: "#0071bc"
     }, {
         name: "Pear",
-        size: 20
+        size: 20,
+        colour: "#323a45"
     }, {
         name: "Banana",
-        size: 80
-    }];
+        size: 80,
+        colour: "#4c2c92"
+    }]
+};
 
-var packChartDataUpdate = [
+var packChartDataUpdate = {
+    sets: [
     {
         name: "Apple",
-        size: 30
+        size: 30,
+        colour: "#0071bc"
     }, {
         name: "Pear",
-        size: 60
+        size: 60,
+        colour: "#323a45"
     }, {
         name: "Orange",
-        size: 40
+        size: 40,
+        colour: "#fdb81e"
     }, {
         name: "Melon",
-        size: 100
-    }];
+        size: 100,
+        colour: "#2e8540"
+    }]
+};

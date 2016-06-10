@@ -8,7 +8,7 @@
             left: 40
         },
         height: 400,
-        width: null,
+        width: 500,
 
         chartType: yawd3.chartKind.pack,
         chartId: "#chartPack"

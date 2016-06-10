@@ -164,7 +164,7 @@
             ((chartType == yawd3.chartKind.bubble) &&
             ((!data) || (data == null) || (!data.sets) || (data.sets == null) || (Array.isArray(data.sets) == false))) ||
             ((chartType == yawd3.chartKind.pack) &&
-            ((!data) || (data == null) || (Array.isArray(data) == false))) ||
+            ((!data) || (data == null) || (!data.sets) || (data.sets == null) || (Array.isArray(data.sets) == false))) ||
             ((chartType == yawd3.chartKind.tree) &&
             ((!data) || (data == null) || (!data.name) || (data.name == null) || (!data.children) || (data.children == null) || (Array.isArray(data.children) == false))) ||
             ((chartType == yawd3.chartKind.radial) &&
@@ -287,7 +287,7 @@
                 break;
             case yawd3.chartKind.bubble:
                 chart = setupBubbleChart(data, options.bubbleChart.isTimeCategory, options.bubbleChart.categoryTimeFormat,
-                options.bubbleChart.xTicks, options.height, options.width);
+                    options.bubbleChart.xTicks, options.height, options.width);
                 break;
             case yawd3.chartKind.pack:
                 chart = setupPackChart(data, options.height, options.width);
@@ -313,7 +313,8 @@
 
         if ((options.chartType == yawd3.chartKind.column) ||
             (options.chartType == yawd3.chartKind.line) ||
-            (options.chartType == yawd3.chartKind.pie))
+            (options.chartType == yawd3.chartKind.pie) ||
+            (options.chartType == yawd3.chartKind.pack))
             for (var i = 0; i < data.sets.length; i++)
                 items.push({
                     name: data.sets[i].name,
@@ -1168,7 +1169,8 @@
     function createPackChart(options, data, svg, chart) {
         var bubbles = svg.selectAll(".bubble")
             .data(chart.pack.nodes({
-                name: "ROOT", children: data
+                name: "ROOT",
+                children: data.sets
             }), function (d) {
                 return d.name;
             })
@@ -1210,7 +1212,8 @@
     function updatePackChart(options, data, svg, chart) {
         var bubbles = svg.selectAll("g.bubble")
             .data(chart.pack.nodes({
-                name: "ROOT", children: data
+                name: "ROOT",
+                children: data.sets
             }), function (d) {
                 return d.name;
             });
@@ -1228,7 +1231,7 @@
             .transition()
             .duration(options.transition.delay.remove)
             .attr("r", 0)
-                        .remove();
+            .remove();
 
         bubbles.exit()
             .remove();
@@ -1240,8 +1243,9 @@
             });
 
         bubbles.selectAll("circle")
-            .data(packChart.pack.nodes({
-                name: "ROOT", children: data
+            .data(chart.pack.nodes({
+                name: "ROOT",
+                children: data.sets
             }), function (d) {
                 return d.name;
             })
@@ -1266,7 +1270,6 @@
             .attr("r", function (d) {
                 return d.r;
             });
-
     };
 
     //tree
