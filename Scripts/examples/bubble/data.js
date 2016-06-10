@@ -63,7 +63,8 @@ var bubbleChartDataDate = {
             x: "2016-04-01",
             y: 40,
             size: 40
-        }]
+        }],
+        colour: "#0071bc"
     }, {
         name: "Pear",
         values: [{
@@ -72,7 +73,7 @@ var bubbleChartDataDate = {
             size: 5
         }, {
             x: "2016-02-01",
-            y: 10,
+            y: 7,
             size: 10
         }, {
             x: "2016-03-01",
@@ -80,9 +81,10 @@ var bubbleChartDataDate = {
             size: 15
         }, {
             x: "2016-04-01",
-            y: 20,
+            y: 22,
             size: 20
-        }]
+        }],
+        colour: "#323a45"
     }, {
         name: "Banana",
         values: [{
@@ -101,7 +103,8 @@ var bubbleChartDataDate = {
             x: "2016-04-01",
             y: 8,
             size: 8
-        }]
+        }],
+        colour: "#4c2c92"
     }]
 };
 
@@ -124,7 +127,8 @@ var bubbleChartDataDateUpdate = {
             x: "2016-04-01",
             y: 40,
             size: 20
-        }]
+        }],
+        colour: "#0071bc"
     }, {
         name: "Pear",
         values: [{
@@ -133,7 +137,7 @@ var bubbleChartDataDateUpdate = {
             size: 15
         }, {
             x: "2016-02-01",
-            y: 10,
+            y: 25,
             size: 10
         }, {
             x: "2016-03-01",
@@ -141,9 +145,10 @@ var bubbleChartDataDateUpdate = {
             size: 15
         }, {
             x: "2016-04-01",
-            y: 20,
+            y: 65,
             size: 10
-        }]
+        }],
+        colour: "#323a45"
     }, {
         name: "Orange",
         values: [{
@@ -164,9 +169,10 @@ var bubbleChartDataDateUpdate = {
             size: 18
         }, {
             x: "2016-05-01",
-            y: 20,
+            y: 24,
             size: 10
-        }]
+        }],
+        colour: "#fdb81e"
     }]
 };
 
@@ -189,7 +195,8 @@ var bubbleChartDataValue = {
             x: 60,
             y: 40,
             size: 40
-        }]
+        }],
+        colour: "#0071bc"
     }, {
         name: "Pear",
         values: [{
@@ -198,7 +205,7 @@ var bubbleChartDataValue = {
             size: 5
         }, {
             x: 20,
-            y: 10,
+            y: 7,
             size: 10
         }, {
             x: 30,
@@ -206,15 +213,16 @@ var bubbleChartDataValue = {
             size: 15
         }, {
             x: 60,
-            y: 20,
+            y: 22,
             size: 20
-        }]
+        }],
+        colour: "#323a45"
     }, {
         name: "Banana",
         values: [{
             x: -50,
             y: 2,
-            size: 2
+            size: 12
         }, {
             x: 20,
             y: 4,
@@ -227,7 +235,8 @@ var bubbleChartDataValue = {
             x: 60,
             y: 8,
             size: 8
-        }]
+        }],
+        colour: "#4c2c92"
     }]
 };
 
@@ -250,7 +259,8 @@ var bubbleChartDataValueUpdate = {
             x: 30,
             y: 40,
             size: 20
-        }]
+        }],
+        colour: "#0071bc"
     }, {
         name: "Pear",
         values: [{
@@ -259,17 +269,18 @@ var bubbleChartDataValueUpdate = {
             size: 15
         }, {
             x: 20,
-            y: 10,
+            y: 7,
             size: 10
         }, {
             x: 40,
-            y: 40,
+            y: 45,
             size: 15
         }, {
             x: 60,
-            y: 20,
+            y: 65,
             size: 10
-        }]
+        }],
+        colour: "#323a45"
     }, {
         name: "Orange",
         values: [{
@@ -290,9 +301,10 @@ var bubbleChartDataValueUpdate = {
             size: 18
         }, {
             x: 40,
-            y: 20,
+            y: 24,
             size: 10
-        }]
+        }],
+        colour: "#fdb81e"
     }]
 };
 

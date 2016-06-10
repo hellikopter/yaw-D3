@@ -65,7 +65,8 @@
 
         bubbleChart: {
             isTimeCategory: false,
-            categoryTimeFormat: "%Y-%m-%d"
+            categoryTimeFormat: "%Y-%m-%d",
+            xTicks: 6
         },
 
         treeDiagram: {
@@ -78,74 +79,78 @@
         options = setToDefaultOptions(options);
         checkDataOptions(options.chartType, data);
 
+        var svg = createChart(options);
+        var chart = setupChart(options, data);
+
         switch (options.chartType) {
             case yawd3.chartKind.column:
-                createColumnChart(options, data);
+                createColumnChart(options, data, svg, chart);
                 break;
             case yawd3.chartKind.line:
-                createLineChart(options, data);
+                createLineChart(options, data, svg, chart);
                 break;
             case yawd3.chartKind.pie:
-                createPieChart(options, data);
+                createPieChart(options, data, svg, chart);
                 break;
             case yawd3.chartKind.bubble:
-                createBubbleChart(options, data);
+                createBubbleChart(options, data, svg, chart);
                 break;
             case yawd3.chartKind.pack:
-                createPackChart(options, data);
+                createPackChart(options, data, svg, chart);
                 break;
             case yawd3.chartKind.tree:
-                createTreeDiagram(options, data);
+                createTreeDiagram(options, data, svg, chart);
                 break;
             case yawd3.chartKind.radial:
-                createRadialDiagram(options, data);
+                createRadialDiagram(options, data, svg, chart);
                 break;
             case yawd3.chartKind.chord:
-                createChordDiagram(options, data);
+                createChordDiagram(options, data, svg, chart);
                 break;
         }
         if (options.hasLegend == true)
-            createLegend(options, data);
+            createLegend(options, data, chart);
     };
 
     yawd3.updateChart = function (options, data) {
         checkOptions(options);
         options = setToDefaultOptions(options);
 
-        var chart = d3.select(options.chartId + " g");
-        if (isNaN(chart.node().getAttribute("data-chart-type")))
+        var svg = d3.select(options.chartId + " g");
+        if (isNaN(svg.node().getAttribute("data-chart-type")))
             throw new Error("Invalid chart object");
+        var chartKindId = svg.node().getAttribute("data-chart-type") * 1;
+        checkDataOptions(chartKindId, data);
 
-        checkDataOptions(chart.node().getAttribute("data-chart-type") * 1, data);
-
-        switch (chart.node().getAttribute("data-chart-type") * 1) {
+        var chart = setupChart(options, data);
+        switch (chartKindId) {
             case yawd3.chartKind.column:
-                updateColumnChart(options, data);
+                updateColumnChart(options, data, svg, chart);
                 break;
             case yawd3.chartKind.line:
-                updateLineChart(options, data);
+                updateLineChart(options, data, svg, chart);
                 break;
             case yawd3.chartKind.pie:
-                updatePieChart(options, data);
+                updatePieChart(options, data, svg, chart);
                 break;
             case yawd3.chartKind.bubble:
-                updateBubbleChart(options, data);
+                updateBubbleChart(options, data, svg, chart);
                 break;
             case yawd3.chartKind.pack:
-                updatePackChart(options, data);
+                updatePackChart(options, data, svg, chart);
                 break;
             case yawd3.chartKind.tree:
                 throw new Error("Tree diagram cannot be updated");
                 break;
             case yawd3.chartKind.radial:
-                updateRadialDiagram(options, data);
+                updateRadialDiagram(options, data, svg, chart);
                 break;
             case yawd3.chartKind.tree:
                 throw new Error("Chord diagram cannot be updated");
                 break;
         }
         if (options.hasLegend == true)
-            updateLegend(options, data);
+            updateLegend(options, data, chart);
     };
 
     function checkDataOptions(chartType, data) {
@@ -161,7 +166,7 @@
             ((chartType == yawd3.chartKind.pack) &&
             ((!data) || (data == null) || (Array.isArray(data) == false))) ||
             ((chartType == yawd3.chartKind.tree) &&
-            ((!data) || (data == null) || (!data.name) || (data.name == null) || (!data.children) || (data.children==null) || (Array.isArray(data.children) == false))) ||
+            ((!data) || (data == null) || (!data.name) || (data.name == null) || (!data.children) || (data.children == null) || (Array.isArray(data.children) == false))) ||
             ((chartType == yawd3.chartKind.radial) &&
             ((!data) || (data == null) || (!data.children) || (data.children == null) || (Array.isArray(data.children) == false))) ||
             ((chartType == yawd3.chartKind.chord) &&
@@ -228,6 +233,8 @@
             options.bubbleChart = options.bubbleChart || yawd3.defaultOptions.bubbleChart;
             options.bubbleChart.isTimeCategory = options.bubbleChart.isTimeCategory || yawd3.defaultOptions.bubbleChart.isTimeCategory;
             options.bubbleChart.categoryTimeFormat = options.bubbleChart.categoryTimeFormat || yawd3.defaultOptions.bubbleChart.categoryTimeFormat;
+            if (options.bubbleChart.xTicks != null)
+                options.bubbleChart.xTicks = options.bubbleChart.xTicks || yawd3.defaultOptions.bubbleChart.xTicks;
         }
         if (options.chartType == yawd3.chartKind.tree) {
             options.treeDiagram = options.treeDiagram || yawd3.defaultOptions.treeDiagram;
@@ -236,14 +243,14 @@
         return options;
     };
 
-    function chartSetup(options) {
+    function createChart(options) {
         options.width = options.width || d3.select(options.chartId).node().getBoundingClientRect().width - options.margin.left - options.margin.right;
 
-        var chart = d3.select(options.chartId)
+        var svg = d3.select(options.chartId)
             .attr("width", (options.width + options.margin.left + options.margin.right))
             .attr("height", (options.height + options.margin.top + options.margin.bottom))
             .attr("viewBox", "0 0 " + (options.width + options.margin.left + options.margin.right) + " " + (options.height + options.margin.top + options.margin.bottom))
-            .append("g")            
+            .append("g")
             .attr("data-chart-type", options.chartType);
 
         switch (options.chartType) {
@@ -251,23 +258,58 @@
             case yawd3.chartKind.line:
             case yawd3.chartKind.bubble:
             case yawd3.chartKind.pack:
-            case yawd3.chartKind.tree:            
-                chart.attr("transform", "translate(" + options.margin.left + "," + options.margin.top + ")");
+            case yawd3.chartKind.tree:
+                svg.attr("transform", "translate(" + options.margin.left + "," + options.margin.top + ")");
                 break;
             case yawd3.chartKind.pie:
             case yawd3.chartKind.radial:
             case yawd3.chartKind.chord:
-                chart.attr("transform", "translate(" + (options.width / 2) + "," + (options.height / 2) + ")");
+                svg.attr("transform", "translate(" + (options.width / 2) + "," + (options.height / 2) + ")");
                 break;
         }
-        
+
+        return svg;
+    };
+
+    function setupChart(options, data) {
+        var chart = null;
+
+        switch (options.chartType) {
+            case yawd3.chartKind.column:
+                chart = setupColumnChart(data, options.columnChart.isStacked, options.height, options.width);
+                break;
+            case yawd3.chartKind.line:
+                chart = setupLineChart(data, options.lineChart.isTimeCategory, options.lineChart.categoryTimeFormat,
+                    options.lineChart.interpolation, options.lineChart.isArea, options.lineChart.xTicks, options.height, options.width);
+                break;
+            case yawd3.chartKind.pie:
+                chart = setupPieChart(options.pieChart.isDoughnut, options.height, options.width);
+                break;
+            case yawd3.chartKind.bubble:
+                chart = setupBubbleChart(data, options.bubbleChart.isTimeCategory, options.bubbleChart.categoryTimeFormat,
+                options.bubbleChart.xTicks, options.height, options.width);
+                break;
+            case yawd3.chartKind.pack:
+                chart = setupPackChart(data, options.height, options.width);
+                break;
+            case yawd3.chartKind.tree:
+                chart = setupTreeDiagram(data, options.height, options.width);
+                break;
+            case yawd3.chartKind.radial:
+                chart = setupRadialDiagram(data, options.height, options.width);
+                break;
+            case yawd3.chartKind.chord:
+                chart = setupChordDiagram(data, options.height, options.width);
+                break;
+        }
         return chart;
     };
 
     //legend
 
-    function getDataForLegend(options, data) {
+    function getDataForLegend(options, data, chart) {
         var items = [];
+        var isColourRange = false;
 
         if ((options.chartType == yawd3.chartKind.column) ||
             (options.chartType == yawd3.chartKind.line) ||
@@ -278,15 +320,29 @@
                     colour: data.sets[i].colour || d3.scale.category20().range()[i % 20]
                 });
 
-        return items;
+        if (options.chartType == yawd3.chartKind.bubble) {
+            isColourRange = true;
+            for (var i = 0; i < data.sets.length; i++)
+                items.push({
+                    name: data.sets[i].name,
+                    colourMin: chart.colours[data.sets[i].name].range()[0],
+                    colourMax: chart.colours[data.sets[i].name].range()[1]
+                });
+        }
+
+        return {
+            items: items,
+            isColourRange: isColourRange
+        }
     };
 
-    function createLegend(options, data) {
-        var items = getDataForLegend(options, data);
+    function createLegend(options, data, chart) {
+        var legendData = getDataForLegend(options, data, chart);
+        var textDistance = 13;
 
-        var legend = d3.select(options.chartId+"Legend")
+        var legend = d3.select(options.chartId + "Legend")
             .selectAll(".legend")
-            .data(items)
+            .data(legendData.items)
             .enter()
             .append("g")
             .attr("class", "legend")
@@ -294,29 +350,47 @@
                 return "translate(0," + (ix * 15) + ")";
             });
 
-        legend.append("rect")
-            .attr("width", 10)
-            .attr("height", 10)
-            .style("fill", function (d) {
-                return d.colour;
-            });
+        if (legendData.isColourRange == false)
+            legend.append("rect")
+                .attr("width", 10)
+                .attr("height", 10)
+                .style("fill", function (d) {
+                    return d.colour;
+                });
+        else {
+            legend.append("rect")
+                .attr("width", 10)
+                .attr("height", 10)
+                .style("fill", function (d) {
+                    return d.colourMin;
+                });
+            legend.append("rect")
+                .attr("width", 10)
+                .attr("height", 10)
+                .attr("transform", "translate(12,0)")
+                .style("fill", function (d) {
+                    return d.colourMax;
+                });
+            textDistance = 25;
+        }
 
         legend.append("text")
-            .attr("x", 13)
+            .attr("x", textDistance)
             .attr("dy", "0.7em")
             .text(function (d) {
                 return d.name;
             });
     };
 
-    function updateLegend(options, data) {
-        var items = getDataForLegend(options, data);
+    function updateLegend(options, data, chart) {
+        var legendData = getDataForLegend(options, data, chart);
+        var textDistance = 13;
 
-        var legend = d3.select(options.chartId+"Legend")
-            .selectAll("g.legend")
-            .data(items, function (d) {
-                return d.name;
-            });
+        var legend = d3.select(options.chartId + "Legend")
+        .selectAll("g.legend")
+        .data(legendData.items, function (d) {
+            return d.name;
+        });
 
         var groups = legend.enter()
             .append("g")
@@ -324,23 +398,38 @@
             .attr("transform", function (d, ix) {
                 return "translate(0," + (ix * 15) + ")";
             });
-
-        groups.append("rect")
+        if (legendData.isColourRange == false)
+            groups.append("rect")
+                .attr("width", 10)
+                .attr("height", 10)
+                .style("fill", function (d) {
+                    return d.colour;
+                });
+        else {
+            groups.append("rect")
+                .attr("width", 10)
+                .attr("height", 10)
+                .style("fill", function (d) {
+                    return d.colourMin;
+                });
+            groups.append("rect")
             .attr("width", 10)
             .attr("height", 10)
+            .attr("transform", "translate(12,0)")
             .style("fill", function (d) {
-                return d.colour;
+                return d.colourMax;
             });
-
+            textDistance = 25;
+        }
         groups.append("text")
-            .attr("x", 13)
+            .attr("x", textDistance)
             .attr("dy", "0.7em")
             .text(function (d) {
                 return d.name;
             });
 
         legend.exit()
-            .remove();
+                    .remove();
     };
 
     //column
@@ -377,7 +466,7 @@
 
         var xAxis = d3.svg.axis()
             .scale(x)
-            .orient("bottom");
+                .orient("bottom");
 
         var yAxis = d3.svg.axis()
             .scale(y)
@@ -394,11 +483,8 @@
         }
     };
 
-    function createColumnChart(options, data) {
-        var chart = chartSetup(options);
-        var columnChart = setupColumnChart(data, options.columnChart.isStacked, options.height, options.width);        
-
-        var categories = chart.selectAll("g.category")
+    function createColumnChart(options, data, svg, chart) {
+        var categories = svg.selectAll("g.category")
             .data(data.categories, function (d) {
                 return d;
             })
@@ -406,7 +492,7 @@
             .append("g")
             .attr("class", "category")
             .attr("transform", function (d) {
-                return "translate(" + columnChart.x(d) + ",0)";
+                return "translate(" + chart.x(d) + ",0)";
             });
 
         categories.selectAll("rect")
@@ -418,72 +504,73 @@
                 return d.colour || d3.scale.category20().range()[setIx % 20];
             })
             .attr("x", function (d) {
-                return options.columnChart.isStacked == true ? columnChart.x(d.name) : columnChart.xGroup(d.name);
+                return options.columnChart.isStacked == true ? chart.x(d.name) : chart.xGroup(d.name);
             })
             .attr("width", function () {
-                return options.columnChart.isStacked == true ? columnChart.x.rangeBand() : columnChart.xGroup.rangeBand();
+                return options.columnChart.isStacked == true ? chart.x.rangeBand() : chart.xGroup.rangeBand();
             })
             .attr("height", 0)
             .attr("y", function (d, setIx, catIx) {
                 if (options.columnChart.isStacked == true)
-                    return options.height - d3.sum(data.sets.slice(0, setIx), function (set) { return options.height - columnChart.y(set.values[catIx]); });
+                    return options.height - d3.sum(data.sets.slice(0, setIx), function (set) {
+                        return options.height - chart.y(set.values[catIx]);
+                    });
                 else
                     return options.height;
             })
             .transition()
             .duration(options.transition.delay.insert)
             .attr("height", function (d, setIx, catIx) {
-                return options.height - columnChart.y(d.values[catIx]);
+                return options.height - chart.y(d.values[catIx]);
             })
             .attr("y", function (d, setIx, catIx) {
                 if (options.columnChart.isStacked == true)
-                    return options.height - d3.sum(data.sets.slice(0, setIx + 1), function (set) { return options.height - columnChart.y(set.values[catIx]); });
+                    return options.height - d3.sum(data.sets.slice(0, setIx + 1), function (set) {
+                        return options.height - chart.y(set.values[catIx]);
+                    });
                 else
-                    return columnChart.y(d.values[catIx]);
+                    return chart.y(d.values[catIx]);
             });
 
-        chart.append("g")
+        svg.append("g")
             .attr("class", "x axis")
             .attr("transform", "translate(0," + options.height + ")")
-            .call(columnChart.xAxis);
+            .call(chart.xAxis);
 
-        chart.append("g")
+        svg.append("g")
             .attr("class", "y axis")
-            .call(columnChart.yAxis);
+            .call(chart.yAxis);
     };
 
-    function updateColumnChart(options, data) {
-        var columnChart = setupColumnChart(data, options.columnChart.isStacked, options.height, options.width);
-        var chart = d3.select(options.chartId + " g");
-
-        chart.select(".x.axis")
+    function updateColumnChart(options, data, svg, chart) {
+        svg.select(".x.axis")
             .transition()
             .duration(options.transition.delay.update)
             .ease("sin-in-out")
-            .call(columnChart.xAxis);
+            .call(chart.xAxis);
 
-        chart.select(".y.axis")
+        svg.select(".y.axis")
             .transition()
             .duration(options.transition.delay.update)
             .ease("sin-in-out")
-            .call(columnChart.yAxis);
+            .call(chart.yAxis);
 
-        var categories = chart.selectAll("g.category")
+        var categories = svg.selectAll("g.category")
             .data(data.categories, function (d) {
                 return d;
-            });        
+            });
 
         categories.transition()
             .duration(options.transition.delay.update)
             .attr("transform", function (d) {
-                return "translate(" + columnChart.x(d) + ",0)";
+                return "translate(" + chart.x(d) + ",0)";
             });
 
         categories.enter()
             .append("g")
             .attr("class", "category")
             .attr("transform", function (d) {
-                return "translate(" + columnChart.x(d) + ",0)";
+                return "translate(" + chart.x(d) + ",0)";
             });
 
         var columns = categories.selectAll("rect.column")
@@ -495,26 +582,28 @@
             .style("fill", options.transition.exitColour)
             .transition()
             .duration(options.transition.delay.remove)
-            .attr("y", columnChart.y(0))
-            .attr("height", options.height - columnChart.y(0))
-            .remove();
+            .attr("y", chart.y(0))
+            .attr("height", options.height - chart.y(0))
+                            .remove();
 
         columns.transition()
             .duration(options.transition.delay.update)
             .attr("x", function (d) {
-                return options.columnChart.isStacked == true ? columnChart.x(d.name) : columnChart.xGroup(d.name);
+                return options.columnChart.isStacked == true ? chart.x(d.name) : chart.xGroup(d.name);
             })
             .attr("width", function () {
-                return options.columnChart.isStacked == true ? columnChart.x.rangeBand() : columnChart.xGroup.rangeBand();
+                return options.columnChart.isStacked == true ? chart.x.rangeBand() : chart.xGroup.rangeBand();
             })
             .attr("height", function (d, setIx, catIx) {
-                return options.height - columnChart.y(d.values[catIx]);
+                return options.height - chart.y(d.values[catIx]);
             })
             .attr("y", function (d, setIx, catIx) {
                 if (options.columnChart.isStacked == true)
-                    return options.height - d3.sum(data.sets.slice(0, setIx + 1), function (set) { return options.height - columnChart.y(set.values[catIx]); });
+                    return options.height - d3.sum(data.sets.slice(0, setIx + 1), function (set) {
+                        return options.height - chart.y(set.values[catIx]);
+                    });
                 else
-                    return columnChart.y(d.values[catIx]);
+                    return chart.y(d.values[catIx]);
             });
 
         columns.enter()
@@ -524,32 +613,36 @@
                 return d.colour || d3.scale.category20().range()[setIx % 20];
             })
             .attr("x", function (d) {
-                return options.columnChart.isStacked == true ? columnChart.x(d.name) : columnChart.xGroup(d.name);
+                return options.columnChart.isStacked == true ? chart.x(d.name) : chart.xGroup(d.name);
             })
             .attr("width", function () {
-                return options.columnChart.isStacked == true ? columnChart.x.rangeBand() : columnChart.xGroup.rangeBand();
+                return options.columnChart.isStacked == true ? chart.x.rangeBand() : chart.xGroup.rangeBand();
             })
             .attr("height", 0)
             .attr("y", function (d, setIx, catIx) {
                 if (options.columnChart.isStacked == true)
-                    return options.height - d3.sum(data.sets.slice(0, setIx), function (set) { return options.height - columnChart.y(set.values[catIx]); });
+                    return options.height - d3.sum(data.sets.slice(0, setIx), function (set) {
+                        return options.height - chart.y(set.values[catIx]);
+                    });
                 else
                     return options.height;
             })
             .transition()
             .duration(options.transition.delay.insert)
             .attr("height", function (d, setIx, catIx) {
-                return options.height - columnChart.y(d.values[catIx]);
+                return options.height - chart.y(d.values[catIx]);
             })
             .attr("y", function (d, setIx, catIx) {
                 if (options.columnChart.isStacked == true)
-                    return options.height - d3.sum(data.sets.slice(0, setIx + 1), function (set) { return options.height - columnChart.y(set.values[catIx]); });
+                    return options.height - d3.sum(data.sets.slice(0, setIx + 1), function (set) {
+                        return options.height - chart.y(set.values[catIx]);
+                    });
                 else
-                    return columnChart.y(d.values[catIx]);
+                    return chart.y(d.values[catIx]);
             });
 
         categories.exit()
-            .remove();        
+                            .remove();
     };
 
     //line
@@ -602,7 +695,7 @@
         var xAxis = d3.svg.axis()
             .scale(x)
             .orient("bottom")
-            .ticks(xTicks);
+                .ticks(xTicks);
 
         var yAxis = d3.svg.axis()
             .scale(y)
@@ -647,12 +740,8 @@
         }
     };
 
-    function createLineChart(options, data) {
-        var chart = chartSetup(options);
-        var lineChart = setupLineChart(data, options.lineChart.isTimeCategory, options.lineChart.categoryTimeFormat,
-            options.lineChart.interpolation, options.lineChart.isArea, options.lineChart.xTicks, options.height, options.width);
-
-        chart.selectAll(".line")
+    function createLineChart(options, data, svg, chart) {
+        svg.selectAll(".line")
             .data(data.sets, function (d) {
                 return d.name;
             })
@@ -673,41 +762,36 @@
                     return 1;
             })
             .attr("d", function (d) {
-                return lineChart.line(d.values);
+                return chart.line(d.values);
             })
             .style("stroke", function (d, ix) {
                 return d.colour || d3.scale.category20().range()[ix % 20];
             });
 
-        chart.append("g")
+        svg.append("g")
             .attr("class", "x axis")
             .attr("transform", "translate(0," + options.height + ")")
-            .call(lineChart.xAxis);
+            .call(chart.xAxis);
 
-        chart.append("g")
+        svg.append("g")
             .attr("class", "y axis")
-            .call(lineChart.yAxis);
+            .call(chart.yAxis);
     };
 
-    function updateLineChart(options, data) {
-        var lineChart = setupLineChart(data, options.lineChart.isTimeCategory, options.lineChart.categoryTimeFormat,
-            options.lineChart.interpolation, options.lineChart.isArea, options.lineChart.xTicks, options.height, options.width);
-
-        var chart = d3.select(options.chartId + " g");
-
-        chart.select(".x.axis")
+    function updateLineChart(options, data, svg, chart) {
+        svg.select(".x.axis")
             .transition()
             .duration(options.transition.delay.update)
             .ease("sin-in-out")
-            .call(lineChart.xAxis);
+            .call(chart.xAxis);
 
-        chart.select(".y.axis")
+        svg.select(".y.axis")
             .transition()
             .duration(options.transition.delay.update)
             .ease("sin-in-out")
-            .call(lineChart.yAxis);
+            .call(chart.yAxis);
 
-        var sets = chart.selectAll("g.line")
+        var sets = svg.selectAll("g.line")
             .data(data.sets, function (d) {
                 return d.name;
             });
@@ -718,7 +802,7 @@
             .style("stroke", options.transition.exitColour)
             .transition()
             .duration(options.transition.delay.remove)
-            .remove();
+                            .remove();
 
         sets.enter()
             .append("g")
@@ -742,14 +826,14 @@
             .duration(options.transition.delay.update)
             .ease("linear")
             .attr("d", function (d, catIx, setIx) {
-                return lineChart.line(data.sets[setIx].values);
+                return chart.line(data.sets[setIx].values);
             })
             .style("stroke", function (d, catIx, setIx) {
                 return d.colour || d3.scale.category20().range()[setIx % 20];
             });
 
         sets.exit()
-            .remove();
+                    .remove();
     };
 
     //pie
@@ -770,7 +854,7 @@
         var arcTween = function (a) {
             var i = d3.interpolate(this._current, a);
             this._current = i(0);
-            
+
             return function (t) {
                 return arc(i(t));
             };
@@ -779,35 +863,30 @@
         return {
             arc: arc,
             pie: pie,
-            arcTween: arcTween            
+            arcTween: arcTween
         }
     };
 
-    function createPieChart(options, data) {
-        var chart = chartSetup(options);
-        var pieChart = setupPieChart(options.pieChart.isDoughnut, options.height, options.width);
-
-        chart.selectAll("path")
-            .data(pieChart.pie(data.sets), function (d) {
+    function createPieChart(options, data, svg, chart) {
+        svg.selectAll("path")
+            .data(chart.pie(data.sets), function (d) {
                 return d.data.name;
             })
             .enter()
             .append("path")
             .attr("class", "pie")
-            .attr("d", pieChart.arc)
+            .attr("d", chart.arc)
             .style("fill", function (d, ix) {
                 return d.data.fill || d3.scale.category20().range()[ix % 20];
             })
-            .each(function (d) { this._current = d; });
+            .each(function (d) {
+                this._current = d;
+            });
     };
 
-    function updatePieChart(options, data) {
-        var pieChart = setupPieChart(options.pieChart.isDoughnut, options.height, options.width);
-
-        var chart = d3.select(options.chartId + " g");
-
-        var sets = chart.selectAll("path.pie")
-            .data(pieChart.pie(data.sets), function (d) {
+    function updatePieChart(options, data, svg, chart) {
+        var sets = svg.selectAll("path.pie")
+            .data(chart.pie(data.sets), function (d) {
                 return d.data.name;
             });
 
@@ -815,35 +894,38 @@
             .style("fill", options.transition.exitColour)
             .transition()
             .duration(options.transition.delay.remove)
-            .remove();
+                    .remove();
 
         sets.enter()
             .append("path")
             .attr("class", "pie")
-            .attr("d", pieChart.arc)
+            .attr("d", chart.arc)
             .style("fill", function (d, ix) {
                 return d.data.fill || d3.scale.category20().range()[ix % 20];
             })
-            .each(function (d) { this._current = d; });
-        
+            .each(function (d) {
+                this._current = d;
+            });
+
         sets.transition()
-            .duration(options.transition.delay.update)            
-            .attrTween("d", pieChart.arcTween)
+            .duration(options.transition.delay.update)
+            .attrTween("d", chart.arcTween)
             .attr("transform", null);
 
     };
 
     //bubble
 
-    function setupBubbleChart(data, isTimeCategory, categoryTimeFormat, height, width) {
+    function setupBubbleChart(data, isTimeCategory, categoryTimeFormat, xTicks, height, width) {
         var x = null;
         var xMinValue = null;
         var xMaxValue = null;
         var yMinValue = null;
         var yMaxValue = null;
-        var colours = {};
+        var colours = {
+        };
 
-        var minX=function(values){
+        var minX = function (values) {
             return d3.min(values, function (val) {
                 if (isTimeCategory == true)
                     return d3.time.format(categoryTimeFormat).parse(val.x);
@@ -852,7 +934,7 @@
             });
         };
 
-        var maxX=function(values){
+        var maxX = function (values) {
             return d3.max(values, function (val) {
                 if (isTimeCategory == true)
                     return d3.time.format(categoryTimeFormat).parse(val.x);
@@ -861,13 +943,13 @@
             });
         };
 
-        var minY=function(values){
+        var minY = function (values) {
             return d3.min(values, function (val) {
                 return val.y;
             });
         };
 
-        var maxY=function(values){
+        var maxY = function (values) {
             return d3.max(values, function (val) {
                 return val.y;
             });
@@ -904,7 +986,8 @@
 
         var xAxis = d3.svg.axis()
             .scale(x)
-            .orient("bottom");
+            .orient("bottom")
+                .ticks(xTicks);
 
         var yAxis = d3.svg.axis()
             .scale(y)
@@ -942,12 +1025,8 @@
         }
     }
 
-    function createBubbleChart(options, data) {
-        var chart = chartSetup(options);
-        var bubbleChart = setupBubbleChart(data, options.bubbleChart.isTimeCategory, options.bubbleChart.categoryTimeFormat,
-            options.height, options.width);        
-
-        var sets=chart.selectAll(".bubble")
+    function createBubbleChart(options, data, svg, chart) {
+        var sets = svg.selectAll(".bubble")
             .data(data.sets.map(function (d) {
                 return d.name;
             }))
@@ -956,21 +1035,17 @@
             .attr("class", "bubble");
 
         sets.selectAll("circle")
-            .data(bubbleChart.selectedSetValues, function (d) {
+            .data(chart.selectedSetValues, function (d) {
                 return d.x + ":" + d.y;
             })
             .enter()
             .append("circle")
             .style("fill", function (d, catIx, setIx) {
-                return bubbleChart.colours[data.sets[setIx].name](d.y);
+                return chart.colours[data.sets[setIx].name](d.y);
             })
-            .style("stroke", function (d, catIx, setIx) {
-                return d.colour || d3.scale.category20().range()[setIx % 20];
-            })
-            .style("stroke-width", 2)
             .style("opacity", 0.8)
             .attr("r", function (d) {
-                return d3.max([Math.sqrt(options.height - bubbleChart.y(d.size)), 1]);
+                return d3.max([Math.sqrt(options.height - chart.y(d.size)), 1]);
             })
             .attr("cx", function (d) {
                 var x = null;
@@ -978,41 +1053,36 @@
                     x = d3.time.format(options.bubbleChart.categoryTimeFormat).parse(d.x);
                 else
                     x = d.x;
-                return bubbleChart.x(x);
+                return chart.x(x);
             })
             .attr("cy", function (d) {
-                return bubbleChart.y(d.y);
+                return chart.y(d.y);
             });
 
-        chart.append("g")
+        svg.append("g")
             .attr("class", "x axis")
             .attr("transform", "translate(0," + options.height + ")")
-            .call(bubbleChart.xAxis);
+            .call(chart.xAxis);
 
-        chart.append("g")
+        svg.append("g")
             .attr("class", "y axis")
-            .call(bubbleChart.yAxis);
+            .call(chart.yAxis);
     };
 
-    function updateBubbleChart(options, data) {
-        var bubbleChart = setupBubbleChart(data, options.bubbleChart.isTimeCategory, options.bubbleChart.categoryTimeFormat,
-            options.height, options.width);
-
-        var chart = d3.select(options.chartId + " g");
-
-        chart.select(".x.axis")
+    function updateBubbleChart(options, data, svg, chart) {
+        svg.select(".x.axis")
             .transition()
             .duration(options.transition.delay.update)
             .ease("sin-in-out")
-            .call(bubbleChart.xAxis);
+            .call(chart.xAxis);
 
-        chart.select(".y.axis")
+        svg.select(".y.axis")
             .transition()
             .duration(options.transition.delay.update)
             .ease("sin-in-out")
-            .call(bubbleChart.yAxis);
+            .call(chart.yAxis);
 
-        var sets = chart.selectAll("g.bubble")
+        var sets = svg.selectAll("g.bubble")
             .data(data.sets.map(function (d) {
                 return d.name;
             }));
@@ -1020,35 +1090,31 @@
         sets.exit()
             .transition()
             .duration(options.transition.delay.remove)
-            .remove();
+                            .remove();
 
         sets.enter()
             .append("g")
             .attr("class", "bubble");
 
-        var values=sets.selectAll("circle")
-            .data(bubbleChart.selectedSetValues, function (d) {
+        var values = sets.selectAll("circle")
+            .data(chart.selectedSetValues, function (d) {
                 return d.x + ":" + d.y;
             });
-        
+
         values.exit()
             .style("fill", options.transition.exitColour)
             .transition()
             .duration(options.transition.delay.remove)
-            .remove();
+                            .remove();
 
         values.enter()
             .append("circle")
             .style("fill", function (d, catIx, setIx) {
-                return bubbleChart.colours[data.sets[setIx].name](d.y);
+                return chart.colours[data.sets[setIx].name](d.y);
             })
-            .style("stroke", function (d, catIx, setIx) {
-                return d.colour || d3.scale.category20().range()[setIx % 20];
-            })
-            .style("stroke-width",2)
             .style("opacity", 0.8)
             .attr("r", function (d) {
-                return d3.max([Math.sqrt(options.height - bubbleChart.y(d.size)), 1]);
+                return d3.max([Math.sqrt(options.height - chart.y(d.size)), 1]);
             })
             .attr("cx", function (d) {
                 var x = null;
@@ -1056,29 +1122,29 @@
                     x = d3.time.format(options.bubbleChart.categoryTimeFormat).parse(d.x);
                 else
                     x = d.x;
-                return bubbleChart.x(x);
+                return chart.x(x);
             })
             .attr("cy", function (d) {
-                return bubbleChart.y(d.y);
+                return chart.y(d.y);
             });
 
         values.transition()
-            .duration(options.transition.delay.update)                        
+            .duration(options.transition.delay.update)
             .attr("cx", function (d) {
                 var x = null;
                 if (options.bubbleChart.isTimeCategory == true)
                     x = d3.time.format(options.bubbleChart.categoryTimeFormat).parse(d.x);
                 else
                     x = d.x;
-                return bubbleChart.x(x);
+                return chart.x(x);
             })
             .attr("cy", function (d) {
-                return bubbleChart.y(d.y);
+                return chart.y(d.y);
             })
             .transition()
             .duration(options.transition.delay.update)
             .attr("r", function (d) {
-                return d3.max([Math.sqrt(options.height - bubbleChart.y(d.size)), 1]);
+                return d3.max([Math.sqrt(options.height - chart.y(d.size)), 1]);
             });
     };
 
@@ -1099,12 +1165,11 @@
         }
     };
 
-    function createPackChart(options, data) {
-        var chart = chartSetup(options);
-        var packChart = setupPackChart(data, options.height, options.width);
-
-        var bubbles = chart.selectAll(".bubble")
-            .data(packChart.pack.nodes({ name: "ROOT", children: data }), function (d) {
+    function createPackChart(options, data, svg, chart) {
+        var bubbles = svg.selectAll(".bubble")
+            .data(chart.pack.nodes({
+                name: "ROOT", children: data
+            }), function (d) {
                 return d.name;
             })
             .enter()
@@ -1138,16 +1203,15 @@
             .duration(options.transition.delay.insert)
             .attr("r", function (d) {
                 return d.r;
-            });        
+            });
 
     };
 
-    function updatePackChart(options, data) {
-        var packChart = setupPackChart(data, options.height, options.width);
-        var chart = d3.select(options.chartId + " g");
-
-        var bubbles = chart.selectAll("g.bubble")
-            .data(packChart.pack.nodes({ name: "ROOT", children: data }), function (d) {
+    function updatePackChart(options, data, svg, chart) {
+        var bubbles = svg.selectAll("g.bubble")
+            .data(chart.pack.nodes({
+                name: "ROOT", children: data
+            }), function (d) {
                 return d.name;
             });
 
@@ -1164,19 +1228,21 @@
             .transition()
             .duration(options.transition.delay.remove)
             .attr("r", 0)
-            .remove();
+                        .remove();
 
         bubbles.exit()
             .remove();
 
         bubbles.transition()
             .duration(options.transition.delay.update)
-            .attr("transform", function (d) {                
-                return "translate(" +d.x + "," +d.y + ")";
+            .attr("transform", function (d) {
+                return "translate(" + d.x + "," + d.y + ")";
             });
 
         bubbles.selectAll("circle")
-            .data(packChart.pack.nodes({ name: "ROOT", children: data }), function (d) {
+            .data(packChart.pack.nodes({
+                name: "ROOT", children: data
+            }), function (d) {
                 return d.name;
             })
             .transition()
@@ -1184,7 +1250,7 @@
             .attr("r", function (d) {
                 return d.r;
             });
-        
+
         newBubbles.append("circle")
             .attr("r", 0)
             .style("fill", function (d, ix) {
@@ -1210,7 +1276,9 @@
             .size([height - 20, width - 20]);
 
         var diagonal = d3.svg.diagonal()
-            .projection(function (d) { return [d.y, d.x]; });
+            .projection(function (d) {
+                return [d.y, d.x];
+            });
 
         return {
             tree: tree,
@@ -1218,22 +1286,19 @@
         }
     };
 
-    function createTreeDiagram(options, data) {
-        var chart = chartSetup(options);
-        var treeDiagram = setupTreeDiagram(data, options.height, options.width);
-
-        var nodes = treeDiagram.tree
+    function createTreeDiagram(options, data, svg, chart) {
+        var nodes = chart.tree
             .nodes(data)
             .reverse();
 
-        var links = treeDiagram.tree
+        var links = chart.tree
             .links(nodes);
 
         nodes.forEach(function (d) {
             d.y = d.depth * options.treeDiagram.nodeWidth;
         });
-        
-        var nodesElements= chart.selectAll(".node")
+
+        var nodesElements = svg.selectAll(".node")
             .data(nodes)
             .enter()
             .append("g")
@@ -1243,7 +1308,7 @@
             });
 
         nodesElements.append("circle")
-            .attr("r", 5);
+                        .attr("r", 5);
 
         nodesElements.append("text")
             .attr("x", 13)
@@ -1252,12 +1317,12 @@
                 return d.name;
             });
 
-        chart.selectAll(".link")
+        svg.selectAll(".link")
             .data(links)
             .enter()
             .insert("path", "g")
             .attr("class", "link")
-            .attr("d", treeDiagram.diagonal);
+            .attr("d", chart.diagonal);
     };
 
     //radial
@@ -1298,24 +1363,21 @@
             };
         };
 
-        return {            
+        return {
             partition: partition,
             arc: arc,
             arcTween: arcTween
         }
     };
 
-    function createRadialDiagram(options, data) {
-        var chart = chartSetup(options);
-        var radialDiagram = setupRadialDiagram(data, options.height, options.width);
-
-        var nodes = radialDiagram.partition
+    function createRadialDiagram(options, data, svg, chart) {
+        var nodes = chart.partition
             .nodes(data)
             .filter(function (d) {
                 return d.name;
             });
 
-        var arcs = chart.selectAll(".sequence")
+        var arcs = svg.selectAll(".sequence")
             .data(nodes, function (d) {
                 return d.name;
             })
@@ -1325,21 +1387,20 @@
             .style("fill", function (d, ix) {
                 return d.colour || d3.scale.category20().range()[ix % 20];
             })
-            .attr("d", radialDiagram.arc)
-            .each(function (d) { this._current = d; });
+            .attr("d", chart.arc)
+            .each(function (d) {
+                this._current = d;
+            });
     };
 
-    function updateRadialDiagram(options, data) {
-        var radialDiagram = setupRadialDiagram(data, options.height, options.width);
-        var chart = d3.select(options.chartId + " g");
-
-        var nodes = radialDiagram.partition
+    function updateRadialDiagram(options, data, svg, chart) {
+        var nodes = chart.partition
             .nodes(data)
             .filter(function (d) {
                 return d.name;
             });
 
-        var sequences = chart.selectAll("path.sequence")
+        var sequences = svg.selectAll("path.sequence")
             .data(nodes, function (d) {
                 return d.name;
             });
@@ -1350,7 +1411,7 @@
             .style("fill", function (d, ix) {
                 return d.colour || d3.scale.category20().range()[ix % 20];
             })
-            .attr("d", radialDiagram.arc)
+            .attr("d", chart.arc)
             .each(function (d) {
                 this._current = d;
             });
@@ -1359,12 +1420,12 @@
             .style("fill", options.transition.exitColour)
             .transition()
             .duration(options.transition.delay.remove)
-            .remove();
-            
+                    .remove();
+
         sequences.transition()
             .duration(options.transition.delay.update)
-            .attrTween("d", radialDiagram.arcTween)
-        .attr("transform", null);        
+            .attrTween("d", chart.arcTween)
+        .attr("transform", null);
 
     };
 
@@ -1373,19 +1434,20 @@
     function setupChordDiagram(data, height, width) {
         var radius = Math.min(width, height) / 2;
         var matrix = [];
-        var keys={};
-        var colours = {};
+        var keys = {};
+        var colours = {
+        };
 
         for (var i = 0; i < data.sets.length; i++) {
             matrix.push([]);
-            keys[data.sets[i].id.toString()] = i;                
+            keys[data.sets[i].id.toString()] = i;
             colours[i.toString()] = data.sets[i].colour || d3.scale.category20().range()[i % 20];
             data.sets[i]._relations = [];
         }
         for (var i = 0; i < data.sets.length; i++)
             for (var j = 0; j < data.sets[i].relations.length; j++) {
                 data.sets[i]._relations.push(keys[data.sets[i].relations[j].toString()]);
-            }        
+            }
         for (var i = 0; i < data.sets.length; i++)
             for (var j = 0; j < data.sets.length; j++)
                 if (data.sets[j]._relations.indexOf(i) >= 0)
@@ -1412,34 +1474,31 @@
         }
     };
 
-    function createChordDiagram(options, data) {
-        var chart = chartSetup(options);
-        var chordDiagram = setupChordDiagram(data, options.height, options.width);
+    function createChordDiagram(options, data, svg, chart) {
+        var nodes = chart.chord.matrix(chordDiagram.matrix);
 
-        var nodes = chordDiagram.chord.matrix(chordDiagram.matrix);
-
-        chart.selectAll("g")
+        svg.selectAll("g")
             .data(nodes.groups)
             .enter()
-            .append("g")            
+            .append("g")
             .append("path")
             .attr("class", "node")
             .style("fill", function (d) {
-                return chordDiagram.colours[d.index.toString()];
+                return chart.colours[d.index.toString()];
             })
-            .attr("d", chordDiagram.arc)
+            .attr("d", chart.arc)
 
-        chart.selectAll(".link")
+        svg.selectAll(".link")
             .data(nodes.chords)
             .enter()
             .append("path")
             .attr("class", "link")
-            .style("fill", function (d) {                
-                return chordDiagram.colours[d.source.index.toString()];
+            .style("fill", function (d) {
+                return chart.colours[d.source.index.toString()];
             })
             .style("fill-opacity", 0.8)
             .style("stroke-width", 0)
-            .attr("d", chordDiagram.linkArc);
+            .attr("d", chart.linkArc);
     };
 
     return yawd3;
