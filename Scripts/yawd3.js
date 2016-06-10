@@ -270,7 +270,8 @@
         var items = [];
 
         if ((options.chartType == yawd3.chartKind.column) ||
-            (options.chartType == yawd3.chartKind.line))
+            (options.chartType == yawd3.chartKind.line) ||
+            (options.chartType == yawd3.chartKind.pie))
             for (var i = 0; i < data.sets.length; i++)
                 items.push({
                     name: data.sets[i].name,

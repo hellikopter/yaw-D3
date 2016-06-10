@@ -8,7 +8,6 @@
             left: 40
         },
         height: 300,
-        width: null,
 
         chartType: yawd3.chartKind.pie,
         chartId: "#chartPie"
@@ -22,7 +21,6 @@
             left: 40
         },
         height: 300,
-        width: null,
 
         chartType: yawd3.chartKind.pie,
         chartId: "#chartDoughnut",
@@ -34,8 +32,10 @@
 
     yawd3.drawChart(optionsPie, pieChartData);
     setTimeout(function () { yawd3.updateChart(optionsPie, pieChartDataUpdate); }, 2 * 1000);
+    setTimeout(function () { yawd3.updateChart(optionsPie, pieChartData); }, 4 * 1000);
 
     yawd3.drawChart(optionsDoughnut, pieChartData);
     setTimeout(function () { yawd3.updateChart(optionsDoughnut, pieChartDataUpdate); }, 2 * 1000);
+    setTimeout(function () { yawd3.updateChart(optionsDoughnut, pieChartData); }, 4 * 1000);
 
 })();
