@@ -7,15 +7,16 @@
             bottom: 30,
             left: 40
         },
-        height: 300,
-        width: 300,
+        height: 200,
+        width: 500,
 
         chartType: yawd3.chartKind.line,
         chartId: "#chartLinearDate",
 
         lineChart: {
             isTimeCategory: true,
-            interpolation: "linear"
+            interpolation: "linear",
+            xTicks: 6
         }
     };
 
@@ -26,8 +27,8 @@
             bottom: 30,
             left: 40
         },
-        height: 300,
-        width: 300,
+        height: 200,
+        width: 500,
 
         chartType: yawd3.chartKind.line,
         chartId: "#chartLinearValue",
@@ -44,15 +45,16 @@
             bottom: 30,
             left: 40
         },
-        height: 300,
-        width: 300,
+        height: 200,
+        width: 500,
 
         chartType: yawd3.chartKind.line,
         chartId: "#chartBasisDate",
 
         lineChart: {
             isTimeCategory: true,
-            interpolation: "basis"
+            interpolation: "basis",
+            xTicks: 6
         }
     };
 
@@ -63,8 +65,8 @@
             bottom: 30,
             left: 40
         },
-        height: 300,
-        width: 300,
+        height: 200,
+        width: 500,
 
         chartType: yawd3.chartKind.line,
         chartId: "#chartBasisValue",
@@ -81,15 +83,16 @@
             bottom: 30,
             left: 40
         },
-        height: 300,
-        width: 300,
+        height: 200,
+        width: 500,
 
         chartType: yawd3.chartKind.line,
         chartId: "#chartStepDate",
 
         lineChart: {
             isTimeCategory: true,
-            interpolation: "step"
+            interpolation: "step",
+            xTicks: 6
         }
     };
 
@@ -100,8 +103,8 @@
             bottom: 30,
             left: 40
         },
-        height: 300,
-        width: 300,
+        height: 200,
+        width: 500,
 
         chartType: yawd3.chartKind.line,
         chartId: "#chartStepValue",
@@ -118,8 +121,8 @@
             bottom: 30,
             left: 40
         },
-        height: 300,
-        width: 300,
+        height: 200,
+        width: 500,
 
         chartType: yawd3.chartKind.line,
         chartId: "#chartLinearAreaDate",
@@ -127,7 +130,8 @@
         lineChart: {
             isTimeCategory: true,
             interpolation: "linear",
-            isArea: true
+            isArea: true,
+            xTicks: 6
         }
     };
 
@@ -138,8 +142,8 @@
             bottom: 30,
             left: 40
         },
-        height: 300,
-        width: 300,
+        height: 200,
+        width: 500,
 
         chartType: yawd3.chartKind.line,
         chartId: "#chartLinearAreaValue",
@@ -152,26 +156,34 @@
 
     yawd3.drawChart(optionsLinearDate, lineChartDataDate);
     setTimeout(function () { yawd3.updateChart(optionsLinearDate, lineChartDataDateUpdate); }, 2 * 1000);
+    setTimeout(function () { yawd3.updateChart(optionsLinearDate, lineChartDataDate); }, 4 * 1000);
     
     yawd3.drawChart(optionsLinearValue, lineChartDataValue);
     setTimeout(function () { yawd3.updateChart(optionsLinearValue, lineChartDataValueUpdate); }, 2 * 1000);
+    setTimeout(function () { yawd3.updateChart(optionsLinearValue, lineChartDataValue); }, 4 * 1000);
 
     yawd3.drawChart(optionsBasisDate, lineChartDataDate);
     setTimeout(function () { yawd3.updateChart(optionsBasisDate, lineChartDataDateUpdate); }, 2 * 1000);
+    setTimeout(function () { yawd3.updateChart(optionsBasisDate, lineChartDataDate); }, 4 * 1000);
 
     yawd3.drawChart(optionsBasisValue, lineChartDataValue);
     setTimeout(function () { yawd3.updateChart(optionsBasisValue, lineChartDataValueUpdate); }, 2 * 1000);
+    setTimeout(function () { yawd3.updateChart(optionsBasisValue, lineChartDataValue); }, 4 * 1000);
 
     yawd3.drawChart(optionsStepDate, lineChartDataDate);
     setTimeout(function () { yawd3.updateChart(optionsStepDate, lineChartDataDateUpdate); }, 2 * 1000);
+    setTimeout(function () { yawd3.updateChart(optionsStepDate, lineChartDataDate); }, 4 * 1000);
 
     yawd3.drawChart(optionsStepValue, lineChartDataValue);
     setTimeout(function () { yawd3.updateChart(optionsStepValue, lineChartDataValueUpdate); }, 2 * 1000);
+    setTimeout(function () { yawd3.updateChart(optionsStepValue, lineChartDataValue); }, 4 * 1000);
 
     yawd3.drawChart(optionsLinearAreaDate, lineChartDataDate);
     setTimeout(function () { yawd3.updateChart(optionsLinearAreaDate, lineChartDataDateUpdate); }, 2 * 1000);
+    setTimeout(function () { yawd3.updateChart(optionsLinearAreaDate, lineChartDataDate); }, 4 * 1000);
 
     yawd3.drawChart(optionsLinearAreaValue, lineChartDataValue);
     setTimeout(function () { yawd3.updateChart(optionsLinearAreaValue, lineChartDataValueUpdate); }, 2 * 1000);
+    setTimeout(function () { yawd3.updateChart(optionsLinearAreaValue, lineChartDataValue); }, 4 * 1000);
     
 })();

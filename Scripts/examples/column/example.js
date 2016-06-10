@@ -11,8 +11,7 @@
         width: 500,
 
         chartType: yawd3.chartKind.column,
-        chartId: "#chartSimple",
-        legendId: "#chartSimpleLegend"
+        chartId: "#chartSimple"
     };
 
     var optionsGrouped = {
@@ -27,7 +26,6 @@
 
         chartType: yawd3.chartKind.column,
         chartId: "#chartGrouped",
-        legendId: "#chartGroupedLegend",
 
         columnChart: {
             isStacked: false
@@ -46,7 +44,6 @@
 
         chartType: yawd3.chartKind.column,
         chartId: "#chartStacked",
-        legendId: "#chartStackedLegend",
 
         columnChart: {
             isStacked: true

@@ -36,7 +36,7 @@
 
         chartType: null,
         chartId: null,
-        legendId: null,
+        hasLegend: true,
 
         transition: {
             delay: {
@@ -55,7 +55,8 @@
             isTimeCategory: false,
             interpolation: "linear",
             categoryTimeFormat: "%Y-%m-%d",
-            isArea: false
+            isArea: false,
+            xTicks: 6
         },
 
         pieChart: {
@@ -90,7 +91,7 @@
             case yawd3.chartKind.bubble:
                 createBubbleChart(options, data);
                 break;
-            case yawd3.chartKind.pack :
+            case yawd3.chartKind.pack:
                 createPackChart(options, data);
                 break;
             case yawd3.chartKind.tree:
@@ -103,12 +104,18 @@
                 createChordDiagram(options, data);
                 break;
         }
+        if (options.hasLegend == true)
+            createLegend(options, data);
     };
 
     yawd3.updateChart = function (options, data) {
+        checkOptions(options);
+        options = setToDefaultOptions(options);
+
         var chart = d3.select(options.chartId + " g");
         if (isNaN(chart.node().getAttribute("data-chart-type")))
             throw new Error("Invalid chart object");
+
         checkDataOptions(chart.node().getAttribute("data-chart-type") * 1, data);
 
         switch (chart.node().getAttribute("data-chart-type") * 1) {
@@ -137,6 +144,8 @@
                 throw new Error("Chord diagram cannot be updated");
                 break;
         }
+        if (options.hasLegend == true)
+            updateLegend(options, data);
     };
 
     function checkDataOptions(chartType, data) {
@@ -173,9 +182,11 @@
             (options.chartType != yawd3.chartKind.bubble) &&
             (options.chartType != yawd3.chartKind.pack) &&
             (options.chartType != yawd3.chartKind.tree) &&
-            (options.chartType != yawd3.chartKind.radial)&&
+            (options.chartType != yawd3.chartKind.radial) &&
             (options.chartType != yawd3.chartKind.chord))
             throw new Error("Invalid chart type");
+        if ((options.hasLegend == true) && (document.getElementById(options.chartId.substr(1) + "Legend") == null))
+            throw new Error("Legend element not found");
     };
 
     function setToDefaultOptions(options) {
@@ -188,7 +199,8 @@
         options.width = options.width || yawd3.defaultOptions.width;
         options.chartType = options.chartType || yawd3.defaultOptions.chartType;
         options.chartId = options.chartId || yawd3.defaultOptions.chartId;
-        options.legendId = options.legendId || yawd3.defaultOptions.legendId;
+        if (typeof options.hasLegend != "boolean")
+            options.hasLegend = yawd3.defaultOptions.hasLegend;
         options.transition = options.transition || yawd3.defaultOptions.transition;
         options.transition.delay = options.transition.delay || yawd3.defaultOptions.transition.delay;
         options.transition.delay.insert = options.transition.delay.insert || yawd3.defaultOptions.transition.delay.insert;
@@ -205,6 +217,8 @@
             options.lineChart.interpolation = options.lineChart.interpolation || yawd3.defaultOptions.lineChart.interpolation;
             options.lineChart.categoryTimeFormat = options.lineChart.categoryTimeFormat || yawd3.defaultOptions.lineChart.categoryTimeFormat;
             options.lineChart.isArea = options.lineChart.isArea || yawd3.defaultOptions.lineChart.isArea;
+            if (options.lineChart.xTicks != null)
+                options.lineChart.xTicks = options.lineChart.xTicks || yawd3.defaultOptions.lineChart.xTicks;
         }
         if (options.chartType == yawd3.chartKind.pie) {
             options.pieChart = options.pieChart || yawd3.defaultOptions.pieChart;
@@ -255,7 +269,8 @@
     function getDataForLegend(options, data) {
         var items = [];
 
-        if (options.chartType == yawd3.chartKind.column)
+        if ((options.chartType == yawd3.chartKind.column) ||
+            (options.chartType == yawd3.chartKind.line))
             for (var i = 0; i < data.sets.length; i++)
                 items.push({
                     name: data.sets[i].name,
@@ -268,7 +283,7 @@
     function createLegend(options, data) {
         var items = getDataForLegend(options, data);
 
-        var legend = d3.select(options.legendId)
+        var legend = d3.select(options.chartId+"Legend")
             .selectAll(".legend")
             .data(items)
             .enter()
@@ -294,15 +309,9 @@
     };
 
     function updateLegend(options, data) {
-        var items = [];
+        var items = getDataForLegend(options, data);
 
-        for (var i = 0; i < data.sets.length; i++)
-            items.push({
-                name: data.sets[i].name,
-                colour: data.sets[i].colour || d3.scale.category20().range()[i % 20]
-            });
-
-        var legend = d3.select(options.legendId)
+        var legend = d3.select(options.chartId+"Legend")
             .selectAll("g.legend")
             .data(items, function (d) {
                 return d.name;
@@ -440,9 +449,6 @@
         chart.append("g")
             .attr("class", "y axis")
             .call(columnChart.yAxis);
-
-        if (options.legendId != null)
-            createLegend(options, data);
     };
 
     function updateColumnChart(options, data) {
@@ -542,16 +548,13 @@
             });
 
         categories.exit()
-            .remove();
-
-        if (options.legendId != null)
-            updateLegend(options, data);
+            .remove();        
     };
 
     //line
 
     function setupLineChart(data, isTimeCategory, categoryTimeFormat, interpolation, isArea,
-        height, width) {
+        xTicks, height, width) {
         var x = null;
         var xMinValue = null;
         var xMaxValue = null;
@@ -597,7 +600,8 @@
 
         var xAxis = d3.svg.axis()
             .scale(x)
-            .orient("bottom");
+            .orient("bottom")
+            .ticks(xTicks);
 
         var yAxis = d3.svg.axis()
             .scale(y)
@@ -645,7 +649,7 @@
     function createLineChart(options, data) {
         var chart = chartSetup(options);
         var lineChart = setupLineChart(data, options.lineChart.isTimeCategory, options.lineChart.categoryTimeFormat,
-            options.lineChart.interpolation, options.lineChart.isArea, options.height, options.width);
+            options.lineChart.interpolation, options.lineChart.isArea, options.lineChart.xTicks, options.height, options.width);
 
         chart.selectAll(".line")
             .data(data.sets, function (d) {
@@ -686,7 +690,7 @@
 
     function updateLineChart(options, data) {
         var lineChart = setupLineChart(data, options.lineChart.isTimeCategory, options.lineChart.categoryTimeFormat,
-            options.lineChart.interpolation, options.lineChart.isArea, options.height, options.width);
+            options.lineChart.interpolation, options.lineChart.isArea, options.lineChart.xTicks, options.height, options.width);
 
         var chart = d3.select(options.chartId + " g");
 
@@ -742,6 +746,9 @@
             .style("stroke", function (d, catIx, setIx) {
                 return d.colour || d3.scale.category20().range()[setIx % 20];
             });
+
+        sets.exit()
+            .remove();
     };
 
     //pie

@@ -58,7 +58,8 @@ var lineChartDataDate = {
         }, {
             x: "2016-04-01",
             y: 40
-        }]
+        }],
+        colour: "#0071bc"
     }, {
         name: "Pear",
         values: [{
@@ -73,7 +74,8 @@ var lineChartDataDate = {
         }, {
             x: "2016-04-01",
             y: 20
-        }]
+        }],
+        colour: "#323a45"
     }, {
         name: "Banana",
         values: [{
@@ -88,7 +90,8 @@ var lineChartDataDate = {
         }, {
             x: "2016-04-01",
             y: 8
-        }]
+        }],
+        colour: "#aeb0b5"
     }]
 };
 
@@ -110,7 +113,8 @@ var lineChartDataDateUpdate = {
         }, {
             x: "2016-05-01",
             y: 60
-        }]
+        }],
+        colour: "#0071bc"
     }, {
         name: "Pear",
         values: [{
@@ -128,7 +132,8 @@ var lineChartDataDateUpdate = {
         }, {
             x: "2016-05-01",
             y: 50
-        }]
+        }],
+        colour: "#323a45"
     }, {
         name: "Orange",
         values: [{
@@ -146,7 +151,8 @@ var lineChartDataDateUpdate = {
         }, {
             x: "2016-05-01",
             y: 40
-        }]
+        }],
+        colour: "#fdb81e"
     }]
 };
 
@@ -157,15 +163,16 @@ var lineChartDataValue = {
             x: -50,
             y: 10
         }, {
-            x: 20,
+            x: 0,
             y: 20
         }, {
-            x: 0,
+            x: 20,
             y: 30
         }, {
             x: 60,
             y: 40
-        }]
+        }],
+        colour: "#0071bc"
     }, {
         name: "Pear",
         values: [{
@@ -180,22 +187,24 @@ var lineChartDataValue = {
         }, {
             x: 60,
             y: 20
-        }]
+        }],
+        colour: "#323a45"
     }, {
         name: "Banana",
         values: [{
             x: -50,
             y: 2
         }, {
-            x: 20,
+            x: 0,
             y: 4
         }, {
-            x: 0,
+            x: 20,
             y: 6
         }, {
             x: 60,
             y: 8
-        }]
+        }],
+        colour: "#aeb0b5"
     }]    
 };
 
@@ -206,10 +215,10 @@ var lineChartDataValueUpdate = {
             x: -50,
             y: 10
         }, {
-            x: 40,
+            x: 0,
             y: 20
         }, {
-            x: 0,
+            x: 40,
             y: 30
         }, {
             x: 60,
@@ -217,7 +226,8 @@ var lineChartDataValueUpdate = {
         }, {
             x: 80,
             y: 50
-        }]
+        }],
+        colour: "#0071bc"
     }, {
         name: "Pear",
         values: [{
@@ -235,7 +245,8 @@ var lineChartDataValueUpdate = {
         }, {
             x: 65,
             y: 25
-        }]
+        }],
+        colour: "#323a45"
     }, {
         name: "Orange",
         values: [{
@@ -253,7 +264,8 @@ var lineChartDataValueUpdate = {
         }, {
             x: 70,
             y: 10
-        }]
+        }],
+        colour: "#fdb81e"
     }]
 };
 
