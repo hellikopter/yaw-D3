@@ -239,6 +239,7 @@
         if (options.chartType == yawd3.chartKind.tree) {
             options.treeDiagram = options.treeDiagram || yawd3.defaultOptions.treeDiagram;
             options.treeDiagram.nodeWidth = options.treeDiagram.nodeWidth || yawd3.defaultOptions.treeDiagram.nodeWidth;
+            options.hasLegend = false;
         }
         return options;
     };
@@ -307,6 +308,17 @@
 
     //legend
 
+    function giveMeRecursiveColours(data, items) {
+        for (var i = 0; i < data.children.length; i++) {
+            items.push({
+                name: data.children[i].name,
+                colour: data.children[i].colour || d3.scale.category20().range()[i % 20]
+            });
+            if (data.children[i].children != null)
+                giveMeRecursiveColours(data.children[i], items);
+        }
+    };
+
     function getDataForLegend(options, data, chart) {
         var items = [];
         var isColourRange = false;
@@ -314,7 +326,8 @@
         if ((options.chartType == yawd3.chartKind.column) ||
             (options.chartType == yawd3.chartKind.line) ||
             (options.chartType == yawd3.chartKind.pie) ||
-            (options.chartType == yawd3.chartKind.pack))
+            (options.chartType == yawd3.chartKind.pack) ||
+            (options.chartType == yawd3.chartKind.chord))
             for (var i = 0; i < data.sets.length; i++)
                 items.push({
                     name: data.sets[i].name,
@@ -331,6 +344,9 @@
                 });
         }
 
+        if (options.chartType == yawd3.chartKind.radial)
+            giveMeRecursiveColours(data, items);                
+
         return {
             items: items,
             isColourRange: isColourRange
@@ -341,7 +357,7 @@
         var legendData = getDataForLegend(options, data, chart);
         var textDistance = 13;
 
-        var legend = d3.select(options.chartId + "Legend")
+        var legend = d3.select(options.chartId + "Legend")            
             .selectAll(".legend")
             .data(legendData.items)
             .enter()
@@ -350,6 +366,13 @@
             .attr("transform", function (d, ix) {
                 return "translate(0," + (ix * 15) + ")";
             });
+
+        var maxId = d3.select(options.chartId + "Legend")
+            .selectAll("g.legend")[0]
+            .length;
+
+        d3.select(options.chartId + "Legend")
+            .attr("height", maxId * 15);
 
         if (legendData.isColourRange == false)
             legend.append("rect")
@@ -388,16 +411,29 @@
         var textDistance = 13;
 
         var legend = d3.select(options.chartId + "Legend")
-        .selectAll("g.legend")
-        .data(legendData.items, function (d) {
-            return d.name;
-        });
+            .selectAll("g.legend")
+            .data(legendData.items, function (d) {                
+                return d.name;
+            });
 
+        legend.exit()
+            .remove();
+
+        d3.select(options.chartId + "Legend")
+            .selectAll("g.legend")
+            .attr("transform", function (d, ix) {
+                return "translate(0," + (ix * 15) + ")";
+            });
+        
+        var maxId = d3.select(options.chartId + "Legend")
+            .selectAll("g.legend")[0]
+            .length;
+        
         var groups = legend.enter()
             .append("g")
             .attr("class", "legend")
             .attr("transform", function (d, ix) {
-                return "translate(0," + (ix * 15) + ")";
+                return "translate(0," + ((maxId++) * 15) + ")";
             });
         if (legendData.isColourRange == false)
             groups.append("rect")
@@ -414,12 +450,12 @@
                     return d.colourMin;
                 });
             groups.append("rect")
-            .attr("width", 10)
-            .attr("height", 10)
-            .attr("transform", "translate(12,0)")
-            .style("fill", function (d) {
-                return d.colourMax;
-            });
+                .attr("width", 10)
+                .attr("height", 10)
+                .attr("transform", "translate(12,0)")
+                .style("fill", function (d) {
+                    return d.colourMax;
+                });
             textDistance = 25;
         }
         groups.append("text")
@@ -427,10 +463,7 @@
             .attr("dy", "0.7em")
             .text(function (d) {
                 return d.name;
-            });
-
-        legend.exit()
-                    .remove();
+            });        
     };
 
     //column
@@ -1478,7 +1511,7 @@
     };
 
     function createChordDiagram(options, data, svg, chart) {
-        var nodes = chart.chord.matrix(chordDiagram.matrix);
+        var nodes = chart.chord.matrix(chart.matrix);
 
         svg.selectAll("g")
             .data(nodes.groups)
